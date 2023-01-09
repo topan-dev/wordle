@@ -1,0 +1,20 @@
+{
+    "users": [
+        {
+            "id": 0,
+            "name": "System",
+            "checker": "",
+            "admin": true,
+            "data": {
+                "score": {
+                    "contest": 0,
+                    "pk": 0
+                },
+                "pk": {
+                    "coolingEndTime": 946656000000,
+                    "history": []
+                }
+            }
+        }
+    ]
+}

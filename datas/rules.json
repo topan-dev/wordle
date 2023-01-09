@@ -1,0 +1,20 @@
+{
+    "rules": [
+        {
+            "name": "Standard Rule",
+            "describe": "<p><a href='/user/2'>wxuyuan</a> AK IOI</p>"
+        },
+        {
+            "name": "Standard Rule Level 1",
+            "describe": "<p><a href='/user/2'>wxuyuan</a> AK IOI</p>"
+        },
+        {
+            "name": "Standard Rule Level 2",
+            "describe": "<p><a href='/user/2'>wxuyuan</a> AK IOI</p>"
+        },
+        {
+            "name": "Chef Rule",
+            "describe": "<p><a href='/user/2'>wxuyuan</a> AK IOI</p>"
+        }
+    ]
+}
