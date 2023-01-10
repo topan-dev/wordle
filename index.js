@@ -5,9 +5,7 @@ app.use(cors());
 const bodyParser=require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
-
 const fs=require('fs');
-const { runInContext } = require('vm');
 
 var easywords;
 fs.readFile("datas/easywords.json",'utf8',(err,data)=>{
@@ -392,24 +390,23 @@ app.get('/user/settings',(req,res)=>{
     }
 });
 app.post('/user/changepassword',(req,res)=>{
-    res.status(200).json({error:'暂时关闭该功能。'});
-    // var oldpassword=req.body.oldpassword;
-    // var newpassword=req.body.newpassword;
-    // var userid=req.body.userid;
-    // var i=0;
-    // while(userdata.users.length>i&&userdata.users[i].id!=userid)i++;
-    // if(userdata.users.length==i)res.status(200).json({error:'Can\'t find this user.'});
-    // else{
-    //     if(password_hash_second(password_hash_first(oldpassword))==userdata.users[i].checker){
-    //         userdata.users[i].checker=password_hash_second(password_hash_first(newpassword));
-    //         fs.writeFile("datas/users.json",JSON.stringify(userdata),function(err){
-    //             if(err)console.log('[error] can\'t change uid='+String(userid)+" password: "+err);
-    //             else console.log("[log] "+userdata.users[i].name+" changed his password (success).");
-    //         });
-    //         res.status(200).json({id:userdata.users[i].id,name:userdata.users[i].name,checker:password_hash_first(req.body.password)});
-    //     }
-    //     else res.status(200).json({error:'Password error.'});
-    // }
+    var oldpassword=req.body.oldpassword;
+    var newpassword=req.body.newpassword;
+    var userid=req.body.userid;
+    var i=0;
+    while(userdata.users.length>i&&userdata.users[i].id!=userid)i++;
+    if(userdata.users.length==i)res.status(200).json({error:'Can\'t find this user.'});
+    else{
+        if(password_hash_second(password_hash_first(oldpassword))==userdata.users[i].checker){
+            userdata.users[i].checker=password_hash_second(password_hash_first(newpassword));
+            fs.writeFile("datas/users.json",JSON.stringify(userdata),function(err){
+                if(err)console.log('[error] can\'t change uid='+String(userid)+" password: "+err);
+                else console.log("[log] "+userdata.users[i].name+" changed his password (success).");
+            });
+            res.status(200).json({id:userdata.users[i].id,name:userdata.users[i].name,checker:password_hash_first(req.body.password)});
+        }
+        else res.status(200).json({error:'Password error.'});
+    }
 });
 
 app.get('/chat',(req,res)=>{
@@ -811,25 +808,52 @@ app.get('/pk/*/play',(req,res)=>{
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
         <script>
+            var timeout,starttime;
             $(document).ready(()=>{
-                setInterval(()=>{
-                    if(res.code!=null)
-                        $.post("/pk/status",{code:res.code},
-                            (data,status)=>{
-                                if(data.error==undefined&&data.started)
-                                    location.pathname="/pk/"+res.code+"/play";
+                $.post("/pk/status",{code:"${pkid}"},
+                    (data,status)=>{
+                        $("#recordstotal-inviter")[0].innerText=data.total.inviter;
+                        $("#recordstotal-participant")[0].innerText=data.total.participant;
+                        $("#lastsubmittime-inviter")[0].innerText=new Date(data.lastsubmit.inviter).toLocaleString();
+                        $("#lastsubmittime-participant")[0].innerText=new Date(data.lastsubmit.participant).toLocaleString();
+                        starttime=data.startTime;
+                        timeout=data.timeout;
+                        setInterval(()=>{
+                            if($("#gamestart").length>0){
+                                if(new Date().getTime()>=starttime)
+                                    $("#gamestart").remove();
+                                else{
+                                    var temp=parseInt((starttime-new Date().getTime())/1000);
+                                    $("#starttime")[0].innerText=parseInt(temp/60)+" min "+temp%60+" s";
+                                }
                             }
-                        );
-                },5000);
+                            var temp2=parseInt((timeout-new Date().getTime())/1000);
+                            $("#submittimelimit")[0].innerText=parseInt(temp2/60)+" min "+temp2%60+" s";
+                        },500);
+                    }
+                );
+                setInterval(()=>{
+                    $.post("/pk/status",{code:"${pkid}"},
+                        (data,status)=>{
+                            $("#recordstotal-inviter")[0].innerText=data.total.inviter;
+                            $("#recordstotal-participant")[0].innerText=data.total.participant;
+                            $("#lastsubmittime-inviter")[0].innerText=new Date(data.lastsubmit.inviter).toLocaleString();
+                            $("#lastsubmittime-participant")[0].innerText=new Date(data.lastsubmit.participant).toLocaleString();
+                            starttime=data.startTime;
+                            timeout=data.timeout;
+                        }
+                    );
+                },3000);
                 $(document).ready(function(){
                     $('#submit').click(()=>{
-                        $.post("/pk/${pkid}/submit",
-                            {word: $('#submit-answer')[0].value},
-                            (data,status)=>{
-                                if(data.error!=undefined)alert(data.error);
-                                else location.href="";
-                            }
-                        );
+                        if($("#gamestart").length==0)
+                            $.post("/pk/${pkid}/submit",
+                                {word: $('#submit-answer')[0].value},
+                                (data,status)=>{
+                                    if(data.error!=undefined)alert(data.error);
+                                    else location.href="";
+                                }
+                            );
                     });
                 });
             });
@@ -847,7 +871,7 @@ app.get('/pk/*/play',(req,res)=>{
         <p>Checker: ${pkcodes[i].rule}</p>
         <h4>Rule Describe</h4>
         ${getRuleDescribe(pkcodes[i].rule)}
-        <p><strong>Game will start after <span id="starttime"></span></strong></p>
+        <p id="gamestart"><strong>Game will start after <span id="starttime"></span></strong></p>
         <h4>Submit (Please submit within <span id="submittimelimit"></span>)</h4>
         <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
         <h4>Records</h4>
