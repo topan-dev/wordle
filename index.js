@@ -25,16 +25,9 @@ var rules;
 fs.readFile("datas/rules.json",'utf8',(err,data)=>{
     rules=JSON.parse(data).rules;
 });
-var words=new Array();
-fs.readFile("datas/words.txt",'utf8',(err,data)=>{
-    var temp=data.split('\n');
-    for(var i=0;i<temp.length;i++){
-        var word="";
-        for(var j=0;j<temp[i].length;j++)
-            if(temp[i].charCodeAt(j)<123&&temp[i].charCodeAt(j)>=97)
-                word+=temp[i][j];
-        if(word.length==5)words.push(word);
-    }
+var words;
+fs.readFile("datas/words.json",'utf8',(err,data)=>{
+    words=JSON.parse(data).words;
 });
 var pkdata;
 fs.readFile("datas/pk.json",'utf8',(err,data)=>{
@@ -128,6 +121,7 @@ function password_hash_second(str){
     return str;
 }
 function checklogin(req){
+    if(!req.headers.cookie)return false;
     if(getCookie("logined",req.headers.cookie)!="true")return false;
     var i=0;
     while(userdata.users.length>i&&userdata.users[i].id!=Number(getCookie("loginid",req.headers.cookie)))i++;
@@ -177,6 +171,12 @@ function wordlechecker(myans,answer,type){
         var total=0;
         for(var i=0;i<5;i++)
             if(_return[i]>-1) total+=_return[i];
+        code+=myans+` <span style="color: purple;">`+total+`</span>`;
+    }
+    if(type=="Round Rule"){
+        var total=0;
+        for(var i=0;i<5;i++)
+            if(_return[i]>-1) total+=3-_return[i];
         code+=myans+` <span style="color: purple;">`+total+`</span>`;
     }
     return code;
@@ -240,6 +240,7 @@ app.get('/',(req,res)=>{
         <button onclick="location.pathname='/contests';">Contests</button>
         <button onclick="location.pathname='/pk';">1v1 PK</button>
         <button onclick="location.pathname='/answer';">Answer Query</button>
+        <button onclick="location.pathname='/f/words.json';">Download List</button>
     </body>
 </html>
     `);
@@ -698,6 +699,15 @@ app.get('/pk',(req,res)=>{
                         else $("#res-failure-time")[0].innerText=String(parseInt((res.failureTime-new Date().getTime())/60000))+" min "+String(parseInt((res.failureTime-new Date().getTime())/1000)%60)+" s";
                     }
                 },500);
+                setInterval(()=>{
+                    if(res.code!=null)
+                        $.post("/pk/status",{code:res.code},
+                            (data,status)=>{
+                                if(data.error==undefined&&data.started)
+                                    location.pathname="/pk/"+res.code+"/play";
+                            }
+                        );
+                },5000);
                 $("#create-pk-code").click(()=>{
                     var temp=document.ruleform.ruleselect.value.split('+'),rule=temp[0];
                     for(var i=1;i<temp.length;i++)rule+=" "+temp[i];
@@ -731,7 +741,7 @@ app.get('/pk',(req,res)=>{
         <div id="remover">
             <form name="ruleform">
                 <label>Rule: </label>
-                <select name="ruleselect">`+codes+`</select>
+                <select name="ruleselect">${codes}</select>
             </form>
             <button id="create-pk-code">Create</button>
         </div>
@@ -752,18 +762,46 @@ app.get('/pk/*/play',(req,res)=>{
         while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
         if(i==pkcodes.length)res.redirect('/pk');
         else{
+            var uid=Number(getCookie("loginid",req.headers.cookie));
             if(!pkcodes[i].started){
-                var uid=Number(getCookie("loginid",req.headers.cookie));
                 if(pkcodes[i].inviter==uid){
                     res.redirect('/pk');
                     return;
                 }
                 pkcodes[i].started=true;
                 pkcodes[i].participant=uid;
-                delete pkcodes[i].started;
+                pkcodes[i].answer=easywords[parseInt(Math.random()*easywords.length)];
+                console.log("[log] "+getUserdataById(pkcodes[i].participant).name+" accepted "+getUserdataById(pkcodes[i].inviter).name+"'s invitation.")
+                delete pkcodes[i].failureTime;
+                pkcodes[i].startTime=new Date().getTime()+15000;
+                pkcodes[i].records={
+                    inviter: [],
+                    participant: []
+                };
+                pkcodes[i].status={
+                    timeout: {
+                        inviter: pkcodes[i].startTime+60000,
+                        participant: pkcodes[i].startTime+60000
+                    },
+                    lastsubmit: {
+                        inviter: pkcodes[i].startTime,
+                        participant: pkcodes[i].startTime
+                    }
+                }
             }
-        }
-        res.send(`
+            if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant){
+                res.redirect('/pk'); return;
+            }
+            fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
+            var recs;
+            if(pkcodes[i].inviter==uid) recs=pkcodes[i].records.inviter;
+            else                        recs=pkcodes[i].records.participant;
+            var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+            for(var j=recs.length-1;j>=0;j--)
+                recordcode+=`<tr><th>${j+1}</th>
+                    <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule)}</th></tr>`;
+            recordcode+=`</table>`;
+            res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -773,47 +811,26 @@ app.get('/pk/*/play',(req,res)=>{
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
         <script>
-            var res={
-                code: null,
-                coolingEndTime: new Date().getTime(),
-                failureTime: new Date().getTime(),
-            }
             $(document).ready(()=>{
                 setInterval(()=>{
-                    if(res.code!=null){
-                        $("#res-pk-code")[0].innerText=res.code;
-                        $("#res-pk-url")[0].innerText=location.origin+"/pk/"+res.code+"/play";
-                        if(res.coolingEndTime-new Date().getTime()<=0)$("#res-cooling-end")[0].innerText="Complete.";
-                        else $("#res-cooling-end")[0].innerText=String(parseInt((res.coolingEndTime-new Date().getTime())/60000))+" min "+String(parseInt((res.coolingEndTime-new Date().getTime())/1000)%60)+" s";
-                        if(res.failureTime-new Date().getTime()<=0)$("#res-failure-time")[0].innerText="Expired.";
-                        else $("#res-failure-time")[0].innerText=String(parseInt((res.failureTime-new Date().getTime())/60000))+" min "+String(parseInt((res.failureTime-new Date().getTime())/1000)%60)+" s";
-                    }
-                },500);
-                $("#create-pk-code").click(()=>{
-                    var temp=document.ruleform.ruleselect.value.split('+'),rule=temp[0];
-                    for(var i=1;i<temp.length;i++)rule+=" "+temp[i];
-                    $.post("/pk/create",
-                        {rule:document.ruleform.ruleselect.value},
-                        (data,status)=>{
-                            if(data.error!=undefined)alert(data.error);
-                            else{
-                                $("#remover").remove();
-                                res=data;
+                    if(res.code!=null)
+                        $.post("/pk/status",{code:res.code},
+                            (data,status)=>{
+                                if(data.error==undefined&&data.started)
+                                    location.pathname="/pk/"+res.code+"/play";
                             }
-                        }
-                    );
-                });
-                $("#enter-pk-code").click(()=>{
-                    $.post("/pk/create",
-                        {rule:document.ruleform.ruleselect.value},
-                        (data,status)=>{
-                            if(data.error!=undefined)alert(data.error);
-                            else{
-                                $("#remover").remove();
-                                res=data;
+                        );
+                },5000);
+                $(document).ready(function(){
+                    $('#submit').click(()=>{
+                        $.post("/pk/${pkid}/submit",
+                            {word: $('#submit-answer')[0].value},
+                            (data,status)=>{
+                                if(data.error!=undefined)alert(data.error);
+                                else location.href="";
                             }
-                        }
-                    );
+                        );
+                    });
                 });
             });
         </script>
@@ -821,27 +838,87 @@ app.get('/pk/*/play',(req,res)=>{
     <body>
         <h3>1v1 PK arena</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p>If you receive an invitation from others, please enter the invitation code below and confirm.</p>
-        <p>若您收到他人的邀请，请在下面输入邀请码并且确认。</p>
-        <p><input placeholder="PK code" id="pk-code"></input><button id="enter-pk-code">Enter</button></p>
-        <p>If you want to invite others, please select a competition rule and generate an invitation code.</p>
-        <p>若您想邀请他人，请选择一个比赛规则并生成邀请码。</p>
-        <p>Note that the invitation code is valid for 10 minutes. If no one joins the game within the validity period, it will become invalid. However, no new invitation code can be generated within 5 minutes after the invitation code is generated.</p>
-        <p>注意邀请码的有效期为 10 分钟，有效期内无人加入游戏则失效。而生成邀请码后 5 分钟内不能生成新的邀请码。</p>
-        <div id="remover">
-            <form name="ruleform">
-                <label>Rule: </label>
-                <select name="ruleselect">`+codes+`</select>
-            </form>
-            <button id="create-pk-code">Create</button>
-        </div>
-        <p>Code: <span id="res-pk-code"></span></p>
-        <p>Cooling end time: <span id="res-cooling-end"></span></p>
-        <p>Failure time: <span id="res-failure-time"></span></p>
-        <p>Link: <span id="res-pk-url"></span></p>
+        <p><span id="recordstotal-inviter">0</span> <a
+        href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}
+        </a> VS <a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a> <span
+        id="recordstotal-participant">0</span></p>
+        <p><a href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}</a>'s last submission time: <span id="lastsubmittime-inviter"></span></p>
+        <p><a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a>'s last submission time: <span id="lastsubmittime-participant"></span></p>
+        <p>Checker: ${pkcodes[i].rule}</p>
+        <h4>Rule Describe</h4>
+        ${getRuleDescribe(pkcodes[i].rule)}
+        <p><strong>Game will start after <span id="starttime"></span></strong></p>
+        <h4>Submit (Please submit within <span id="submittimelimit"></span>)</h4>
+        <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
+        <h4>Records</h4>
+        ${recordcode}
     </body>
 </html>
-        `);
+            `);
+        }
+    }
+});
+app.post('/pk/status',(req,res)=>{
+    if(!checklogin(req))res.redirect('/login');
+    else{
+        var uid=Number(getCookie("loginid",req.headers.cookie));
+        var pkid=req.body.code,i=0;
+        while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
+        if(i==pkcodes.length)res.redirect('/pk');
+        else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
+        else if(pkcodes[i].started){
+            res.status(200).json({
+                started: true,
+                total: {
+                    inviter: pkcodes[i].records.inviter.length,
+                    participant: pkcodes[i].records.participant.length
+                },
+                lastsubmit: pkcodes[i].status.lastsubmit,
+                startTime: pkcodes[i].startTime,
+                timeout: uid==pkcodes[i].inviter
+                         ?pkcodes[i].status.timeout.inviter
+                         :pkcodes[i].status.timeout.participant
+            });
+        }
+        else res.status(200).json({started:false});
+    }
+});
+app.post('/pk/*/submit',(req,res)=>{
+    if(!checklogin(req))res.redirect('/login');
+    else{
+        var uid=Number(getCookie("loginid",req.headers.cookie));
+        var pkid=req.url.split('/pk/')[1].split('/')[0];
+        var i=0;
+        while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
+        if(i==pkcodes.length||!pkcodes[i].started)res.redirect('/pk');
+        else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
+        else{
+            if(new Date().getTime()<pkcodes[i].startTime){
+                res.status(200).json({error:"The pk hasn't started yet."});
+                return;
+            }
+            var word=req.body.word;
+            if(pkcodes[i].inviter==uid&&pkcodes[i].records.inviter[pkcodes[i].records.inviter.length-1]==pkcodes[i].answer)
+                res.status(200).json({error:"You have passed this task and cannot submit it again."});
+            else if(pkcodes[i].participant==uid&&pkcodes[i].records.participant[pkcodes[i].records.participant.length-1]==pkcodes[i].answer)
+                res.status(200).json({error:"You have passed this task and cannot submit it again."});
+            else if(!checkword(word))res.status(200).json({error:"Word length must be 5 and it is a legal word."});
+            else{
+                var submittime=new Date().getTime();
+                if(pkcodes[i].inviter==uid){
+                    pkcodes[i].records.inviter.push(word);
+                    pkcodes[i].status.lastsubmit.inviter=submittime;
+                    pkcodes[i].status.timeout.inviter=submittime+60000;
+                }
+                else{
+                    pkcodes[i].records.participant.push(word);
+                    pkcodes[i].status.lastsubmit.participant=submittime;
+                    pkcodes[i].status.timeout.participant=submittime+60000;
+                }
+                fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
+                res.status(200).json({success:true});
+            }
+        }
     }
 });
 app.post('/pk/create',(req,res)=>{
@@ -865,7 +942,7 @@ app.post('/pk/create',(req,res)=>{
             });
             fs.writeFile("datas/users.json",JSON.stringify(userdata),(err)=>{});
             fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
-            console.log("[log] "+userdata.users[id].name+" created a new pk code: "+pkcodes[pkcodes.length-1].code);
+            console.log(`[log] ${userdata.users[id].name} created a new pk code: ${pkcodes[pkcodes.length-1].code}`);
             res.status(200).json({
                 code: pkcodes[pkcodes.length-1].code,
                 coolingEndTime: userdata.users[id].data.pk.coolingEndTime,
@@ -969,5 +1046,5 @@ app.post('/answer/query',(req,res)=>{
 });
 
 app.listen(8699,()=>{
-    console.log('listen:8699');
+    console.log('[log] Port :8699 is opened.');
 });
