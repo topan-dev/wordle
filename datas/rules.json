@@ -6,7 +6,7 @@
         },
         {
             "name": "Standard Rule Level 1",
-            "describe": "<p><a href='/user/2'>wxuyuan</a> AK IOI</p>"
+            "describe": "<p>判定规则：给出在答案中出现过的字母数量。</p><p>例如，答案是 apple，你猜测了 pears，由于其中的 p,e,a 都出现过，所以系统会告诉你 3。同样的，如果你猜测 paper，系统会告诉你 4（p,p,e,a）。</p><br><p>Judgment rule: Give the number of letters that have appeared in the answer.</p><p>For example, the answer is 'apple'. You guessed that 'pears'. Because 'p', 'e', and 'a' have appeared in the answer, so the system will tell you number 3. Similarly, if you guess 'paper', the system will tell you 4 (Because of 'p', 'p', 'e', 'a').</p><br><p>判定規則：答えに現れたアルファベットの数を与える。</p><p>例えば、答えは apple で、あなたは pears を推測して、その中の p、e、a はすべて現れたことがあるため、システムはあなたに 3 を教えます。同様に、paper を推測すると、システムは 4（p、p、e、a）を教えてくれます。</p>"
         },
         {
             "name": "Standard Rule Level 2",
