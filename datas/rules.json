@@ -10,7 +10,7 @@
         },
         {
             "name": "Standard Rule Level 2",
-            "describe": "<p><a href='/user/2'>wxuyuan</a> AK IOI</p>"
+            "describe": "<p><a href='/user/2'>中文<hr><p>判定规则：告诉你在答案中出现的字母，并用标黄表示。如果字母都正确但顺序不对，将以标黄显示，如果猜到了正确的单词，将以绿色表示。</p><p>例如，答案是 apple，你猜了 pears，由于 p,e,a 均在答案中出现过，所以将会显示 <span style=\"color: orange;\">pea</span><span style=\"color: grey;\">rs</span>。如果你猜了 paper，就会显示 paper；如果你猜了 paple，那么会显示 <span style=\"color: orange;\">paple</span>。</p>English<hr>		<p>Judgement rules: Tell you the letters have appeared in the answer, and mark it yellow. We'll mark it yellow if you guess the right letters but they're in the wrong places, too. We will mark it green when the word is correct.</p><p>For example, the answer is 'apple', and you give the word 'pears'. Because 'p', 'e', 'a' is in the answer, so it'll show '<span style=\"color: orange;\">pea</span><span style=\"color: grey;\">rs</span>'. If you give the word 'paper', it'll be '<span style=\"color: orange;\">paper</span>'. If you give the word 'paple', it'll be '<span style=\"color: orange;\">paple</span>'.</p>日本語<hr><p>判断ルール：答えに出てくる文字を教え、黄色にマークします。アルファベットを当てても間違った場所にある場合は、黄色と表記します。単語が正しい場合は、緑と表記します。</p><p>例えば、答えは「apple」で、あなたが出した単語は「pears」です。答えには「p」、「e」、「a」があるので、「<span style=\"color: orange;\">pea</span><span style=\"color: grey;\">rs</span>」と表示されます。「paper」という言葉をあげると、それは「paper」です。「paple」という言葉をあげると、それは「<span style=\"color: orange;\">paple</span>」です。</p></a> AK IOI</p>"
         },
         {
             "name": "Chef Rule",
@@ -18,7 +18,7 @@
         },
         {
             "name": "Round Rule",
-            "describe": "<p>Round Rule is a new rule by <a href=\"/user/2\">wxuyuan</a>. The rule is similar with the Chef Rule. But in this rule, you will get 1 point if the letter is on the right position and 2 points if the letter is in the answer word but it is not on the right position. So in this rule, it not always better when the score is higher.</p><p>e.g. If the answer is apple, and you guess pears, you get 6 points. If you guess paper, you get 7 points.</p><p>Round Rule 是 <a href=\"/user/2\">wxuyuan</a> 的新规则。该规则与 Chef Rule 相似，但在本规则中，如果字母在正确的位置，你会得到 1 分；如果字母在答案词中，但位置不正确，你会得 2 分。因此，在这个规则中，分数并不是越高越好。</p><p>例如，如果答案是 apple，你猜测答案是 pears，你将得到 6 分。如果你猜测答案是 paper，你将得到 7 分。</p><p>「円の規則」は、<a href=\"/user/2\">wxuyuan</a> の新しい規則です。このルールは「シェフのルール」と似ていますが、このルールではアルファベットが正しい位置にあれば 1 点、アルファベットが解答語の中にあるが、位置が正しくない場合は、2 点取られます。したがって、この規則では、点数が高いほど良いというわけではありません。</p><p>例えば、答えが apple なら、pears だと思います。あなたは 6 点を得ます。もしあなたが paper を当てたら、あなたは 7 点を得ます。</p>"
+            "describe": "<p>Round Rule 是 <a href=\"/user/2\">wxuyuan</a> 的新规则。该规则与 Chef Rule 相似，但在本规则中，如果字母在正确的位置，你会得到 1 分；如果字母在答案词中，但位置不正确，你会得 2 分。因此，在这个规则中，分数并不是越高越好。</p><p>例如，如果答案是 apple，你猜测答案是 pears，你将得到 6 分。如果你猜测答案是 paper，你将得到 7 分。</p><p>Round Rule is a new rule by <a href=\"/user/2\">wxuyuan</a>. The rule is similar with the Chef Rule. But in this rule, you will get 1 point if the letter is on the right position and 2 points if the letter is in the answer word but it is not on the right position. So in this rule, it not always better when the score is higher.</p><p>e.g. If the answer is apple, and you guess pears, you get 6 points. If you guess paper, you get 7 points.</p><p>「Round Rule」は、<a href=\"/user/2\">wxuyuan</a> の新しい規則です。このルールは「Chef Rule」と似ていますが、このルールではアルファベットが正しい位置にあれば 1 点、アルファベットが解答語の中にあるが、位置が正しくない場合は、2 点取られます。したがって、この規則では、点数が高いほど良いというわけではありません。</p><p>例えば、答えが apple なら、pears だと思います。あなたは 6 点を得ます。もしあなたが paper を当てたら、あなたは 7 点を得ます。</p>"
         }
     ]
 }
