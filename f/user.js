@@ -52,7 +52,7 @@ $(document).ready(function(){
             };
         document.getElementById("user-settings").onclick=
             function(){
-                location.pathname="/user/settings";
+                location.pathname="/i/settings";
             };
     }
 });

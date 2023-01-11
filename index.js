@@ -7,6 +7,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
 const fs=require('fs');
 
+var pklastfix=946656000000;
+
 var easywords;
 fs.readFile("datas/easywords.json",'utf8',(err,data)=>{
     easywords=JSON.parse(data).easywords;
@@ -39,6 +41,7 @@ fs.readFile("datas/pkcode.json",'utf8',(err,data)=>{
 function getUserdataById(id){
     var i=0;
     while(userdata.users.length>i&&userdata.users[i].id!=id)i++;
+    if(i==userdata.users.length)return null;
     return userdata.users[i];
 }
 function getidofuser(uid){
@@ -145,40 +148,40 @@ function wordlechecker(myans,answer,type,noletter){
 			if(myans.charCodeAt(j)==i)id.push(j);
 		}
 		for(var j=0;j<tot&&j<id.length;j++)
-			_return[id[j]]=1;//字母对 位置不对 
+			_return[id[j]]=1;
 		for(var j=tot;j<id.length;j++)
-			_return[id[j]]=-1;//字母错 
+			_return[id[j]]=-1;
 	}
     var code="";
     if(noletter)myans="■■■■■";
     if(type=="Standard Rule"){
         for(var i=0;i<5;i++)
-            if(_return[i]==-1)     code+='<span style="color: grey;">'  +myans.charAt(i)+'</span>';
-            else if(_return[i]==1) code+='<span style="color: orange;">'+myans.charAt(i)+'</span>';
-            else                   code+='<span style="color: green;">' +myans.charAt(i)+'</span>';
+            if(_return[i]==-1)     code+=  `<span style="color: grey;">${myans.charAt(i)}</span>`;
+            else if(_return[i]==1) code+=`<span style="color: orange;">${myans.charAt(i)}</span>`;
+            else                   code+= `<span style="color: green;">${myans.charAt(i)}</span>`;
     }
     if(type=="Standard Rule Level 1"){
         var total=0;
         for(var i=0;i<5;i++)
             if(_return[i]>-1)total++;
-        code+=myans+` <span style="color: purple;">`+total+`</span>`;
+        code+=myans+` <span style="color: purple;">${total}</span>`;
     }
     if(type=="Standard Rule Level 2"){
         for(var i=0;i<5;i++)
-            if(_return[i]==-1) code+='<span style="color: grey;">' +myans.charAt(i)+'</span>';
-            else               code+='<span style="color: orange;">'+myans.charAt(i)+'</span>';
+            if(_return[i]==-1) code+=  `<span style="color: grey;">${myans.charAt(i)}</span>`;
+            else               code+=`<span style="color: orange;">${myans.charAt(i)}</span>`;
     }
     if(type=="Chef Rule"){
         var total=0;
         for(var i=0;i<5;i++)
             if(_return[i]>-1) total+=_return[i];
-        code+=myans+` <span style="color: purple;">`+total+`</span>`;
+        code+=myans+` <span style="color: purple;">${total}</span>`;
     }
     if(type=="Round Rule"){
         var total=0;
         for(var i=0;i<5;i++)
             if(_return[i]>-1) total+=3-_return[i];
-        code+=myans+` <span style="color: purple;">`+total+`</span>`;
+        code+=myans+` <span style="color: purple;">${total}</span>`;
     }
     return code;
 }
@@ -197,8 +200,78 @@ function newpkcode(){
         if(!flag)return code;
     }
 }
+function transferpkdata(id,code,res){
+    if(id>=pkcodes.length||pkcodes[id].code!=code)return;
+    var temp=pkcodes[id];
+    delete temp.started; delete temp.status;
+    pkcodes.splice(id,1); pkdata.push(temp);
+    userdata.users[getidofuser(temp.inviter)].data.pk.history.push(pkdata.length-1);
+    userdata.users[getidofuser(temp.participant)].data.pk.history.push(pkdata.length-1);
+    fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
+    fs.writeFile("datas/pk.json",JSON.stringify({datas:pkdata}),(err)=>{});
+    fs.writeFile("datas/users.json",JSON.stringify(userdata),(err)=>{});
+}
+function checkpkfinish(id,code){
+    if(id>=pkcodes.length||pkcodes[id].code!=code)return true;
+    if(pkcodes[id].started){
+        var inviterfinished=pkcodes[id].records.inviter;
+        inviterfinished=inviterfinished[inviterfinished.length-1]==pkcodes[id].answer;
+        var participantfinished=pkcodes[id].records.participant;
+        participantfinished=participantfinished[participantfinished.length-1]==pkcodes[id].answer;
+        if(inviterfinished&&participantfinished){
+            if(pkcodes[id].status.lastsubmit.inviter<pkcodes[id].status.lastsubmit.participant)
+                transferpkdata(id,code,pkcodes[id].inviter);
+            else if(pkcodes[id].status.lastsubmit.inviter>pkcodes[id].status.lastsubmit.participant)
+                transferpkdata(id,code,pkcodes[id].participant);
+            else transferpkdata(id,code,null);
+            return true;
+        }
+        else if(inviterfinished){
+            transferpkdata(id,code,pkcodes[id].inviter);
+            return true;
+        }
+        else if(participantfinished){
+            transferpkdata(id,code,pkcodes[id].participant);
+            return true;
+        }
+        else{
+            var invitertimeouted=pkcodes[id].status.timeout.inviter<=new Date().getTime();
+            var participanttimeouted=pkcodes[id].status.timeout.participant<=new Date().getTime();
+            if(invitertimeouted&&participanttimeouted){
+                if(pkcodes[id].status.timeout.inviter<pkcodes[id].status.timeout.participant)
+                    transferpkdata(id,code,pkcodes[id].participant);
+                else if(pkcodes[id].status.timeout.inviter>pkcodes[id].status.timeout.participant)
+                    transferpkdata(id,code,pkcodes[id].inviter);
+                else transferpkdata(id,code,null);
+                return true;
+            }
+            else if(invitertimeouted){
+                transferpkdata(id,code,pkcodes[id].participant);
+                return true;
+            }
+            else if(participanttimeouted){
+                transferpkdata(id,code,pkcodes[id].inviter);
+                return true;
+            }
+            else return false;
+        }
+    }
+    else{
+        if(pkcodes[id].failureTime<=new Date().getTime()){
+            pkcodes.splice(id,1);
+            fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
+            return true;
+        }
+        else return false;
+    }
+}
 
-app.all('*',function(req,res,next){
+app.all('*',(req,res,next)=>{
+    if(new Date().getTime()>pklastfix+600000){
+        for(var i=0;i<pkcodes.length;i++)
+            checkpkfinish(i,pkcodes[i].code);
+        pklastfix=new Date().getTime();
+    }
     if(!req.get('Origin'))return next();
     res.set('Access-Control-Allow-Origin','*');
     res.set('Access-Control-Allow-Methods','GET');
@@ -309,18 +382,24 @@ app.get('/login',(req,res)=>{
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
         <script>
-            $(document).ready(function(){
-                $("#user-login").click(function(){
-                    $.post("/login/try",{name:$('#login-name')[0].value,password:$('#login-password')[0].value},function(data,status){
-                        if(data.error!=undefined)alert(data.error);
-                        else{
-                            setCookie("logined","true",1);
-                            setCookie("loginname",data.name,1);
-                            setCookie("loginchecker",data.checker,1);
-                            setCookie("loginid",data.id,1);
-                            location.pathname="";
+            $(document).ready(()=>{
+                $("#user-login").click(()=>{
+                    $.post("/login/try",
+                        {
+                            name: $('#login-name')[0].value,
+                            password: $('#login-password')[0].value
+                        },
+                        (data,status)=>{
+                            if(data.error!=undefined)alert(data.error);
+                            else{
+                                setCookie("logined","true",1);
+                                setCookie("loginname",data.name,1);
+                                setCookie("loginchecker",data.checker,1);
+                                setCookie("loginid",data.id,1);
+                                location.pathname="";
+                            }
                         }
-                    });
+                    );
                 });
             });
         </script>
@@ -348,7 +427,42 @@ app.post('/login/try',(req,res)=>{
     }
 });
 
-app.get('/user/settings',(req,res)=>{
+app.get('/user/*',(req,res)=>{
+    var id=Math.floor(Number(req.url.split('/user/')[1].split('/')[0]));
+    if("/user/"+String(id)!=req.url)res.sendStatus(404);
+    else{
+        if(!checklogin(req))res.redirect('/login');
+        else{
+            var usrdata=getUserdataById(id);
+            if(usrdata==null){
+                res.sendStatus(404);
+                return;
+            }
+            res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">${usrdata.name}'s (#${usrdata.id}) Home</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <style>
+        </style>
+    </head>
+    <body>
+        <h3>${usrdata.name}'s (#${usrdata.id}) Home</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <p>Username: ${usrdata.name}</p>
+        <p>User ID: ${usrdata.id}</p>
+        <p>Privilege Level: ${usrdata.admin?'Admin':'Ordinary'}</p>
+    </body>
+</html>
+            `);
+        }
+    }
+});
+app.get('/i/settings',(req,res)=>{
     if(!checklogin(req))res.redirect('/login');
     else{
         res.send(`
@@ -361,15 +475,15 @@ app.get('/user/settings',(req,res)=>{
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
         <script>
-            $(document).ready(function(){
-                $("#confirm").click(function(){
+            $(document).ready(()=>{
+                $("#confirm").click(()=>{
                     if($('#password-new')[0].value!=$('#password-repeat')[0].value)alert('The two passwords are different.');
                     else
-                        $.post("/user/changepassword",{
+                        $.post("/i/changepassword",{
                             userid: getCookie('loginid'),
                             oldpassword: $('#password-old')[0].value,
                             newpassword: $('#password-new')[0].value
-                        },function(data,status){
+                        },(data,status)=>{
                             if(data.error!=undefined)alert(data.error);
                             else{
                                 setCookie("logined","true",1);
@@ -397,7 +511,7 @@ app.get('/user/settings',(req,res)=>{
         `);
     }
 });
-app.post('/user/changepassword',(req,res)=>{
+app.post('/i/changepassword',(req,res)=>{
     var oldpassword=req.body.oldpassword;
     var newpassword=req.body.newpassword;
     var userid=req.body.userid;
@@ -407,7 +521,7 @@ app.post('/user/changepassword',(req,res)=>{
     else{
         if(password_hash_second(password_hash_first(oldpassword))==userdata.users[i].checker){
             userdata.users[i].checker=password_hash_second(password_hash_first(newpassword));
-            fs.writeFile("datas/users.json",JSON.stringify(userdata),function(err){
+            fs.writeFile("datas/users.json",JSON.stringify(userdata),(err)=>{
                 if(err)console.log('[error] can\'t change uid='+String(userid)+" password: "+err);
                 else console.log("[log] "+userdata.users[i].name+" changed his password (success).");
             });
@@ -447,10 +561,9 @@ app.get('/contests',(req,res)=>{
     else{
         var codes="";
         for(var i=0;i<contests.length;i++){
-            codes+=`<p><button onclick="location.pathname='/contest/`+i+`/home';">`+contests[i].title
-                  +`</button> By <a href="/user/`+contests[i].author+`">`
-                  +getUserdataById(contests[i].author).name+`</a>, Start at `
-                  +new Date(contests[i].openTime).toLocaleString()+`</p>`;
+            codes+=`<p><button onclick="location.pathname='/contest/${i}/home';">${contests[i].title}</button
+            > By <a href="/user/${contests[i].author}">${getUserdataById(contests[i].author).name}</a
+            >, Start at ${new Date(contests[i].openTime).toLocaleString()}</p>`;
         }
         res.send(`
 <!DOCTYPE html>
@@ -467,8 +580,8 @@ app.get('/contests',(req,res)=>{
     <body>
         <h3>Contest List</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p>Total: `+contests.length+`</p>
-        `+codes+`
+        <p>Total: ${contests.length}</p>
+        ${codes}
     </body>
 </html>
         `);
@@ -482,29 +595,28 @@ app.get('/contest/*/home',(req,res)=>{
         else{
             var codes="";
             for(var i=0;i<contests[id].tasks.length;i++)
-                codes+=`<button onclick="location.pathname='/contest/`
-                    +id+`/task/`+String(i+1)+`';">Task #`+String(i+1)+`</button>`
+                codes+=`<button onclick="location.pathname='/contest/${id}/task/${i+1}';"
+                    >Task #${i+1}</button>`;
             res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width">
-        <title id="title">`+contests[id].title+`</title>
+        <title id="title">${contests[id].title}</title>
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
         <style>
         </style>
     </head>
     <body>
-        <h3>`+contests[id].title+`</h3>
+        <h3>${contests[id].title}</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p>By <a href="/user/`+contests[id].author+`">`
-            +getUserdataById(contests[id].author).name+
-        `</a>; Start at `+(new Date(contests[id].openTime)).toLocaleString()+`</p>
-        <button onclick="location.pathname='/contest/`+id+`/ranking';">Ranking</button>
+        <p>By <a href="/user/${contests[id].author}">${getUserdataById(contests[id].author).name}</a
+        >; Start at ${(new Date(contests[id].openTime)).toLocaleString()}</p>
+        <button onclick="location.pathname='/contest/${id}/ranking';">Ranking</button>
         <h4>Task List</h4>
-        `+codes+`
+        ${codes}
     </body>
 </html>
             `);
@@ -536,7 +648,7 @@ app.get('/contest/*/task/*',(req,res)=>{
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
         <script>
-            $(document).ready(function(){
+            $(document).ready(()=>{
                 $('#submit').click(()=>{
                     $.post("/contest/`+id+`/task/`+taskid+`/submit",
                         {word: $('#submit-answer')[0].value},
@@ -603,7 +715,7 @@ app.post('/contest/*/task/*/submit',(req,res)=>{
                     contests[id].users[i].score++;
                     contests[id].users[i].countrecords+=contests[id].users[i].tasks[taskid-1].records.length-1;
                 }
-                fs.writeFile("datas/contest.json",JSON.stringify({contests:contests}),function(err){
+                fs.writeFile("datas/contest.json",JSON.stringify({contests:contests}),(err)=>{
                     if(err)console.log('[error] can\'t change save new submit: '+err);
                     else console.log("[log] "+getUserdataById(Number(getCookie("loginid",req.headers.cookie))).name+" submited task #"+taskid+" in contest #"+id+".");
                     res.status(200).json({success:true});
@@ -766,6 +878,7 @@ app.get('/pk/*/play',(req,res)=>{
         var i=0;
         while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
         if(i==pkcodes.length)res.redirect('/pk');
+        else if(checkpkfinish(i,pkcodes[i].code))res.redirect('/pk');
         else{
             var uid=Number(getCookie("loginid",req.headers.cookie));
             if(!pkcodes[i].started){
@@ -839,11 +952,11 @@ app.get('/pk/*/play',(req,res)=>{
                                     $("#gamestart").remove();
                                 else{
                                     var temp=parseInt((starttime-new Date().getTime())/1000);
-                                    $("#starttime")[0].innerText=parseInt(temp/60)+" min "+temp%60+" s";
+                                    $("#starttime")[0].innerText=temp+" s";
                                 }
                             }
                             var temp2=parseInt((timeout-new Date().getTime())/1000);
-                            $("#submittimelimit")[0].innerText=parseInt(temp2/60)+" min "+temp2%60+" s";
+                            $("#submittimelimit")[0].innerText=temp2+" s";
                         },500);
                     }
                 );
@@ -860,7 +973,7 @@ app.get('/pk/*/play',(req,res)=>{
                         }
                     );
                 },3000);
-                $(document).ready(function(){
+                $(document).ready(()=>{
                     $('#submit').click(()=>{
                         if($("#gamestart").length==0)
                             $.post("/pk/${pkid}/submit",
@@ -893,7 +1006,7 @@ app.get('/pk/*/play',(req,res)=>{
         <h4>Records</h4>
         ${recordcode}
         <h4>Records submitted by the other party</h4>
-        <div id="records2">${recordcode2}
+        <div id="records2">${recordcode2}</div>
     </body>
 </html>
             `);
@@ -907,6 +1020,7 @@ app.post('/pk/status',(req,res)=>{
         var pkid=req.body.code,i=0;
         while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
         if(i==pkcodes.length)res.redirect('/pk');
+        else if(checkpkfinish(i,pkid))res.redirect('/pk');
         else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
         else if(pkcodes[i].started){
             var recs;
@@ -942,6 +1056,7 @@ app.post('/pk/*/submit',(req,res)=>{
         var i=0;
         while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
         if(i==pkcodes.length||!pkcodes[i].started)res.redirect('/pk');
+        else if(checkpkfinish(i,pkid))res.redirect('/pk');
         else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
         else{
             if(new Date().getTime()<pkcodes[i].startTime){
@@ -959,12 +1074,12 @@ app.post('/pk/*/submit',(req,res)=>{
                 if(pkcodes[i].inviter==uid){
                     pkcodes[i].records.inviter.push(word);
                     pkcodes[i].status.lastsubmit.inviter=submittime;
-                    pkcodes[i].status.timeout.inviter=submittime+60000;
+                    pkcodes[i].status.timeout.inviter=submittime+120000;
                 }
                 else{
                     pkcodes[i].records.participant.push(word);
                     pkcodes[i].status.lastsubmit.participant=submittime;
-                    pkcodes[i].status.timeout.participant=submittime+60000;
+                    pkcodes[i].status.timeout.participant=submittime+120000;
                 }
                 fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
                 res.status(200).json({success:true});
