@@ -218,6 +218,9 @@ app.get('/f/*',(req,res)=>{
 });
 
 app.get('/',(req,res)=>{
+    var rulesdescribe="";
+    for(var i=0;i<rules.length;i++)
+        rulesdescribe+=`<h4>${rules[i].name}</h4>${rules[i].describe}`;
     res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -239,6 +242,8 @@ app.get('/',(req,res)=>{
         <button onclick="location.pathname='/pk';">1v1 PK</button>
         <button onclick="location.pathname='/answer';">Answer Query</button>
         <button onclick="location.pathname='/f/words.json';">Download List</button>
+        <h3>Rules Describe</h3>
+        ${rulesdescribe}
     </body>
 </html>
     `);
