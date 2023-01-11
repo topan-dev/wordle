@@ -127,8 +127,10 @@ function checklogin(req){
     else return password_hash_second(getCookie("loginchecker",req.headers.cookie))==userdata.users[i].checker;
 }
 function wordlechecker(myans,answer,type,noletter){
-    if(myans==answer)return '<span style="color: green;">'+myans+'</span>';
-	//给出反馈 
+    if(myans==answer){
+        if(noletter)return `<span style="color: green;">■■■■■</span>`;
+        else return `<span style="color: green;">${myans}</span>`;
+    }
     var _return=new Array();
 	for(var i=0;i<5;i++)
 		_return.push(0);
@@ -854,6 +856,7 @@ app.get('/pk/*/play',(req,res)=>{
                             $("#lastsubmittime-participant")[0].innerText=new Date(data.lastsubmit.participant).toLocaleString();
                             starttime=data.startTime;
                             timeout=data.timeout;
+                            $("#records2").html(data.records);
                         }
                     );
                 },3000);
@@ -890,7 +893,7 @@ app.get('/pk/*/play',(req,res)=>{
         <h4>Records</h4>
         ${recordcode}
         <h4>Records submitted by the other party</h4>
-        ${recordcode2}
+        <div id="records2">${recordcode2}
     </body>
 </html>
             `);
@@ -906,6 +909,14 @@ app.post('/pk/status',(req,res)=>{
         if(i==pkcodes.length)res.redirect('/pk');
         else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
         else if(pkcodes[i].started){
+            var recs;
+            if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
+            else                        recs=pkcodes[i].records.participant;
+            var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+            for(var j=recs.length-1;j>=0;j--)
+                recordcode+=`<tr><th>${j+1}</th>
+                    <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
+            recordcode+=`</table>`;
             res.status(200).json({
                 started: true,
                 total: {
@@ -916,7 +927,8 @@ app.post('/pk/status',(req,res)=>{
                 startTime: pkcodes[i].startTime,
                 timeout: uid==pkcodes[i].inviter
                          ?pkcodes[i].status.timeout.inviter
-                         :pkcodes[i].status.timeout.participant
+                         :pkcodes[i].status.timeout.participant,
+                records: recordcode
             });
         }
         else res.status(200).json({started:false});
