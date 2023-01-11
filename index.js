@@ -126,7 +126,7 @@ function checklogin(req){
     if(userdata.users.length==i)return false;
     else return password_hash_second(getCookie("loginchecker",req.headers.cookie))==userdata.users[i].checker;
 }
-function wordlechecker(myans,answer,type){
+function wordlechecker(myans,answer,type,noletter){
     if(myans==answer)return '<span style="color: green;">'+myans+'</span>';
 	//给出反馈 
     var _return=new Array();
@@ -148,6 +148,7 @@ function wordlechecker(myans,answer,type){
 			_return[id[j]]=-1;//字母错 
 	}
     var code="";
+    if(noletter)myans="■■■■■";
     if(type=="Standard Rule"){
         for(var i=0;i<5;i++)
             if(_return[i]==-1)     code+='<span style="color: grey;">'  +myans.charAt(i)+'</span>';
@@ -520,7 +521,7 @@ app.get('/contest/*/task/*',(req,res)=>{
             for(var i=temp.records.length-1;i>=0;i--)
                 recordcode+=`<tr><th>`+String(i+1)+`</th><th>`
                            +wordlechecker(temp.records[i].word,
-                                contests[id].tasks[taskid-1].answer,contests[id].tasks[taskid-1].rule)
+                                contests[id].tasks[taskid-1].answer,contests[id].tasks[taskid-1].rule,false)
                            +`</th><th>`+(new Date(temp.records[i].time)).toLocaleString()+`</th></tr>`;
             recordcode+=`</table>`;
             res.send(`
@@ -801,8 +802,15 @@ app.get('/pk/*/play',(req,res)=>{
             var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
             for(var j=recs.length-1;j>=0;j--)
                 recordcode+=`<tr><th>${j+1}</th>
-                    <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule)}</th></tr>`;
+                    <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,false)}</th></tr>`;
             recordcode+=`</table>`;
+            if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
+            else                        recs=pkcodes[i].records.participant;
+            var recordcode2="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+            for(var j=recs.length-1;j>=0;j--)
+                recordcode2+=`<tr><th>${j+1}</th>
+                    <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
+            recordcode2+=`</table>`;
             res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -881,6 +889,8 @@ app.get('/pk/*/play',(req,res)=>{
         <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
         <h4>Records</h4>
         ${recordcode}
+        <h4>Records submitted by the other party</h4>
+        ${recordcode2}
     </body>
 </html>
             `);
