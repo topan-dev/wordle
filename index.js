@@ -37,6 +37,10 @@ var pkcodes;
 fs.readFile("datas/pkcode.json",'utf8',(err,data)=>{
     pkcodes=JSON.parse(data).codes;
 });
+var chat;
+fs.readFile("datas/chat.json",'utf8',(err,data)=>{
+    chat=JSON.parse(data);
+});
 
 function getUserdataById(id){
     var i=0;
@@ -284,12 +288,23 @@ app.all('*',(req,res,next)=>{
             checkpkfinish(i,pkcodes[i].code);
         pklastfix=new Date().getTime();
     }
-    if(!req.get('Origin'))return next();
+    if(!req.get('Origin')){
+        if (checklogin(req) || req.url == '/' || req.url == '/login' || req.url == '/login/try' || !(req.url.split("/f/")[0])) {
+            return next();
+        } else {
+            res.redirect('/login');
+            return;
+        }
+    }
     res.set('Access-Control-Allow-Origin','*');
     res.set('Access-Control-Allow-Methods','GET');
     res.set('Access-Control-Allow-Headers','X-Requested-With, Content-Type');
     if ('OPTIONS'==req.method)return res.send(200);
-    next();
+    if (checklogin(req) || req.url == '/' || req.url == '/login' || req.url == '/login/try' || !(req.url.split("/f/")[0])) {
+        next();
+    } else {
+        res.redirect('/login');
+    }
 });
 
 app.get('/f/*',(req,res)=>{
@@ -443,24 +458,22 @@ app.get('/user/*',(req,res)=>{
     var id=Math.floor(Number(req.url.split('/user/')[1].split('/')[0]));
     if("/user/"+String(id)!=req.url)res.sendStatus(404);
     else{
-        if(!checklogin(req))res.redirect('/login');
-        else{
-            var usrdata=getUserdataById(id);
-            if(usrdata==null){
-                res.sendStatus(404);
-                return;
-            }
-            var usrdata2=usrdata.data.pk.history;
-            var pkrecords="<table border='1'><tr><th>ID</th><th>Code</th><th>Inviter</th><th>Participant</th><th>Winner</th><th>Answer</th><th>Rule</th><th>Time</th></tr>";
-            for(var j=usrdata2.length-1;j>=0;j--)
-                pkrecords+=`<tr><th><a href="/pk/${usrdata2[j]}/view">${usrdata2[j]}</a></th><th>${pkdata[usrdata2[j]].code}</th>
-                    <th><a href="/user/${pkdata[usrdata2[j]].inviter}">${getUserdataById(pkdata[usrdata2[j]].inviter).name}</th>
-                    <th><a href="/user/${pkdata[usrdata2[j]].participant}">${getUserdataById(pkdata[usrdata2[j]].participant).name}</th>
-                    <th><a href="/user/${pkdata[usrdata2[j]].winner}">${getUserdataById(pkdata[usrdata2[j]].winner).name}</th>
-                    <th>${pkdata[usrdata2[j]].answer}</th><th>${pkdata[usrdata2[j]].rule}</th>
-                    <th>${new Date(pkdata[usrdata2[j]].startTime).toLocaleString()}</th></tr>`;
-            pkrecords+=`</table>`;
-            res.send(`
+        var usrdata=getUserdataById(id);
+        if(usrdata==null){
+            res.sendStatus(404);
+            return;
+        }
+        var usrdata2=usrdata.data.pk.history;
+        var pkrecords="<table border='1'><tr><th>ID</th><th>Code</th><th>Inviter</th><th>Participant</th><th>Winner</th><th>Answer</th><th>Rule</th><th>Time</th></tr>";
+        for(var j=usrdata2.length-1;j>=0;j--)
+            pkrecords+=`<tr><th><a href="/pk/${usrdata2[j]}/view">${usrdata2[j]}</a></th><th>${pkdata[usrdata2[j]].code}</th>
+                <th><a href="/user/${pkdata[usrdata2[j]].inviter}">${getUserdataById(pkdata[usrdata2[j]].inviter).name}</th>
+                <th><a href="/user/${pkdata[usrdata2[j]].participant}">${getUserdataById(pkdata[usrdata2[j]].participant).name}</th>
+                <th><a href="/user/${pkdata[usrdata2[j]].winner}">${getUserdataById(pkdata[usrdata2[j]].winner).name}</th>
+                <th>${pkdata[usrdata2[j]].answer}</th><th>${pkdata[usrdata2[j]].rule}</th>
+                <th>${new Date(pkdata[usrdata2[j]].startTime).toLocaleString()}</th></tr>`;
+        pkrecords+=`</table>`;
+        res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -482,18 +495,14 @@ app.get('/user/*',(req,res)=>{
         ${pkrecords}
     </body>
 </html>
-            `);
-        }
+        `);
     }
 });
 app.get('/i',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else res.redirect(`/user/${getCookie("loginid",req.headers.cookie)}`);
+    res.redirect(`/user/${getCookie("loginid",req.headers.cookie)}`);
 });
 app.get('/i/settings',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else{
-        res.send(`
+    res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -536,8 +545,7 @@ app.get('/i/settings',(req,res)=>{
         <p><button id="confirm">Confirm</button></p>
     </body>
 </html>
-        `);
-    }
+    `);
 });
 app.post('/i/changepassword',(req,res)=>{
     var oldpassword=req.body.oldpassword;
@@ -560,8 +568,82 @@ app.post('/i/changepassword',(req,res)=>{
 });
 
 app.get('/chat',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else{
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">Chat</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <script>
+            $(document).ready(function(){
+                $("#enterGroup").click(function() {
+                    window.location.href = "/chat/group/" + $("#input-group-id").val() + "/view";
+                });
+                $("#enterPrivate").click(function() {
+                    window.location.href = "/chat/private/" + $("#input-user-id").val();
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <h3>Chat</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <div>
+            <p>私聊：（输入用户 ID）</p>
+            <input placeholder="User id" id="input-user-id"></input><button id="enterPrivate">Enter</button>
+            <p>群聊：（输入群 ID）</p>
+            <input placeholder="Group id" id="input-group-id"></input><button id="enterGroup">Enter</button>
+        </div>
+    </body>
+</html>
+    `);
+});
+app.all("/chat/private/*", (req, res, next) => {
+    req.fromuid = Number(getCookie("loginid",req.headers.cookie));
+    req.touid = Number(req.url.split("/chat/private/")[1].split("/")[0]);
+    if(req.touid<0||req.touid>=userdata.users.length){
+        res.redirect("/chat");
+        return;
+    }
+    req.fromuser = req.smalluid = getidofuser(req.fromuid);
+    req.touser = req.biguid = getidofuser(req.touid);
+    if (req.smalluid > req.biguid) {
+        var tmp = req.smalluid;
+        req.smalluid = req.biguid;
+        req.biguid = tmp;
+    }
+    next();
+})
+app.post("/chat/private/*/send", (req, res) => {
+    var content = req.body.content;
+    if (!chat.private[req.smalluid]) {
+        chat.private[req.smalluid] = [];
+    }
+    if (!chat.private[req.smalluid][req.biguid]) {
+        chat.private[req.smalluid][req.biguid] = {messages: []};
+    }
+    chat.private[req.smalluid][req.biguid].messages.push({uid: req.fromuid, content: content, time: new Date().getTime()});
+    fs.writeFile("datas/chat.json",JSON.stringify(chat), (err) => {});
+    res.status(200).json({status: 200});
+});
+app.get("/chat/private/*/get", (req, res) => {
+    if (!chat.private[req.smalluid]) {
+        chat.private[req.smalluid] = [];
+    }
+    if (!chat.private[req.smalluid][req.biguid]) {
+        chat.private[req.smalluid][req.biguid] = {messages: []};
+    }
+    var temp=chat.private[req.smalluid][req.biguid].messages.slice(req.query.renderedDatas,);
+    for(var i=0;i<temp.length;i++)
+        temp[i].username=getUserdataById(temp[i].uid).name,
+        temp[i].time=new Date(temp[i].time).toLocaleString();
+    res.send(temp);
+});
+app.get("/chat/private/*", (req, res) => {
+    if(`/chat/private/${req.touid}`==req.url)
         res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -571,13 +653,168 @@ app.get('/chat',(req,res)=>{
         <title id="title">Chat</title>
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
-        <style>
-        </style>
+        <style></style>
+        <script>
+            $(document).ready(function(){
+                var dataRendered = [];
+                function renderData(message) {
+                    var nowhtml = $("#chat").html();
+                    nowhtml = nowhtml + \`<p><a href="/user/\${message.uid}">\${message.username}</a>: (\${message.time})\${message.content}</p>\`;
+                    $("#chat").html(nowhtml);
+                }
+                function getMessage() {
+                    $.ajax({
+                        method: "GET",
+                        url: location.href + "/get",
+                        data: {
+                            renderedDatas: dataRendered.length
+                        },
+                        async: false,
+                        error: function() {
+                            alert("Network error!");
+                        },
+                        success: function(data) {
+                            for (var messageid in data) {
+                                var message = data[messageid];
+                                dataRendered.push(message);
+                                renderData(message);
+                            }
+                        }
+                    });
+                    setTimeout(getMessage, 2000);
+                }
+                function sendMessage(content) {
+                    $.ajax({
+                        url: location.href + "/send",
+                        method: "POST",
+                        data: {
+                            content: content
+                        }
+                    })
+                }
+                $("#send").click(function() {
+                    sendMessage($("#message").val());
+                });
+                getMessage();
+            });
+        </script>
     </head>
     <body>
         <h3>Chat</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <div style=""></div>
+        <h2>对 ${userdata.users[getidofuser(req.touid)].name} 私聊 </h2>
+        <div id="chat">
+        </div>
+        <input placeholder="Type your message" id="message"></input>
+        <button id="send">Send</button>
+    </body>
+</html>
+        `);
+    else res.redirect("/chat");
+});
+app.post("/chat/group/*/send", (req, res) => {
+    var userid = Number(getCookie("loginid",req.headers.cookie));
+    var content = req.body.content;
+    var groupid = parseInt(Number(req.url.split("/chat/group/")[1].split("/")[0]));
+    if(`/chat/group/${groupid}/send`!=req.url||groupid<0||groupid>=chat.groups.length){
+        res.redirect("/chat"); return;
+    }
+    var group = chat.groups[groupid];
+    if ((!(0 in group.members)) && (!(user in group.members))) {
+        res.redirect("/chat"); return;
+    }
+    chat.groups[groupid].messages.push({uid: userid, content: content, time: new Date().getTime()});
+    fs.writeFile("datas/chat.json",JSON.stringify(chat), (err) => {});
+    res.status(200).json({status: 200});
+});
+app.get("/chat/group/*/get", (req, res) => {
+    var groupid = parseInt(Number(req.url.split("/chat/group/")[1].split("/")[0]));
+    if(`/chat/group/${groupid}/get`!=req.url.split("?")[0]||groupid<0||groupid>=chat.groups.length){
+        res.redirect("/"); return;
+    }
+    var group = chat.groups[groupid];
+    if ((!(0 in group.members)) && (!(user in group.members))) {
+        res.redirect("/chat"); return;
+    }
+    var temp=chat.groups[groupid].messages.slice(req.query.renderedDatas,);
+    for(var i=0;i<temp.length;i++)
+        temp[i].username=getUserdataById(temp[i].uid).name,
+        temp[i].time=new Date(temp[i].time).toLocaleString();
+    res.send(temp);
+});
+app.get("/chat/group/*/view", (req, res) => {
+    var user = getCookie("loginid",req.headers.cookie);
+    var groupid = parseInt(Number(req.url.split("/chat/group/")[1].split("/")[0]));
+    if(`/chat/group/${groupid}/view`!=req.url||groupid<0||groupid>=chat.groups.length){
+        res.redirect("/chat"); return;
+    }
+    var group = chat.groups[groupid];
+    if ((!(0 in group.members)) && (!(user in group.members))) {
+        res.redirect("/chat"); return;
+    } else {
+        res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">Chat</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <style></style>
+        <script>
+            $(document).ready(function(){
+                var dataRendered = [];
+                function renderData(message) {
+                    var nowhtml = $("#chat").html();
+                    nowhtml = nowhtml + \`<p><a href="/user/\${message.uid}">\${message.username}</a>: (\${message.time})\${message.content}</p>\`;
+                    $("#chat").html(nowhtml);
+                }
+                function getMessage() {
+                    $.ajax({
+                        method: "GET",
+                        url: "/chat/group/${groupid}/get",
+                        data: {
+                            renderedDatas: dataRendered.length
+                        },
+                        async: false,
+                        error: function() {
+                            alert("Network error!");
+                        },
+                        success: function(data) {
+                            for (var messageid in data) {
+                                var message = data[messageid];
+                                dataRendered.push(message);
+                                renderData(message);
+                            }
+                        }
+                    });
+                    setTimeout(getMessage, 2000);
+                }
+                function sendMessage(content) {
+                    $.ajax({
+                        url: "/chat/group/${groupid}/send",
+                        method: "POST",
+                        data: {
+                            content: content
+                        }
+                    })
+                }
+                $("#send").click(function() {
+                    sendMessage($("#message").val());
+                });
+                getMessage();
+            });
+        </script>
+    </head>
+    <body>
+        <h3>Chat</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <h2>群聊 ${group.name}</h2>
+        <div id="chat">
+        </div>
+        <input placeholder="Type your message" id="message"></input>
+        <button id="send">Send</button>
     </body>
 </html>
         `);
@@ -619,13 +856,11 @@ app.get('/contest/*/home',(req,res)=>{
     var id=Math.floor(Number(req.url.split('/contest/')[1].split('/')[0]));
     if("/contest/"+String(id)+"/home"!=req.url)res.sendStatus(404);
     else{
-        if(!checklogin(req))res.redirect('/login');
-        else{
-            var codes="";
-            for(var i=0;i<contests[id].tasks.length;i++)
-                codes+=`<button onclick="location.pathname='/contest/${id}/task/${i+1}';"
-                    >Task #${i+1}</button>`;
-            res.send(`
+        var codes="";
+        for(var i=0;i<contests[id].tasks.length;i++)
+            codes+=`<button onclick="location.pathname='/contest/${id}/task/${i+1}';"
+                >Task #${i+1}</button>`;
+        res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -647,8 +882,7 @@ app.get('/contest/*/home',(req,res)=>{
         ${codes}
     </body>
 </html>
-            `);
-        }
+        `);
     }
 });
 app.get('/contest/*/task/*',(req,res)=>{
@@ -656,17 +890,15 @@ app.get('/contest/*/task/*',(req,res)=>{
     var taskid=Math.floor(Number(req.url.split('/task/')[1].split('/')[0]));
     if("/contest/"+String(id)+"/task/"+String(taskid)!=req.url)res.sendStatus(404);
     else{
-        if(!checklogin(req))res.redirect('/login');
-        else{
-            var recordcode="<table border='1'><tr><th>ID</th><th>Result</th><th>Time</th></tr>";
-            var temp=getrecords(Number(getCookie("loginid",req.headers.cookie)),id,taskid);
-            for(var i=temp.records.length-1;i>=0;i--)
-                recordcode+=`<tr><th>`+String(i+1)+`</th><th>`
-                           +wordlechecker(temp.records[i].word,
-                                contests[id].tasks[taskid-1].answer,contests[id].tasks[taskid-1].rule,false)
-                           +`</th><th>`+(new Date(temp.records[i].time)).toLocaleString()+`</th></tr>`;
-            recordcode+=`</table>`;
-            res.send(`
+        var recordcode="<table border='1'><tr><th>ID</th><th>Result</th><th>Time</th></tr>";
+        var temp=getrecords(Number(getCookie("loginid",req.headers.cookie)),id,taskid);
+        for(var i=temp.records.length-1;i>=0;i--)
+            recordcode+=`<tr><th>`+String(i+1)+`</th><th>`
+                        +wordlechecker(temp.records[i].word,
+                            contests[id].tasks[taskid-1].answer,contests[id].tasks[taskid-1].rule,false)
+                        +`</th><th>`+(new Date(temp.records[i].time)).toLocaleString()+`</th></tr>`;
+        recordcode+=`</table>`;
+        res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -701,8 +933,7 @@ app.get('/contest/*/task/*',(req,res)=>{
         `+recordcode+`
     </body>
 </html>
-            `);
-        }
+        `);
     }
 });
 app.post('/contest/*/task/*/submit',(req,res)=>{
@@ -710,45 +941,42 @@ app.post('/contest/*/task/*/submit',(req,res)=>{
     var taskid=Math.floor(Number(req.url.split('/task/')[1].split('/')[0]));
     if("/contest/"+String(id)+"/task/"+String(taskid)+"/submit"!=req.url)res.sendStatus(404);
     else{
-        if(!checklogin(req))res.redirect('/login');
+        if(new Date().getTime()<contests[id].openTime){
+            res.status(200).json({error:"The contest hasn't started yet."});
+            return;
+        }
+        var word=req.body.word;
+        if(getrecords(Number(getCookie("loginid",req.headers.cookie)),id,taskid).solved)
+            res.status(200).json({error:"You have passed this task and cannot submit it again."});
+        else if(!checkword(word))res.status(200).json({error:"Word length must be 5 and it is a legal word."});
         else{
-            if(new Date().getTime()<contests[id].openTime){
-                res.status(200).json({error:"The contest hasn't started yet."});
-                return;
+            var i=0;
+            while(i<contests[id].users.length&&contests[id].users[i].id!=Number(getCookie("loginid",req.headers.cookie)))i++;
+            if(i==contests[id].users.length){
+                var pushdata={
+                    id: Number(getCookie("loginid",req.headers.cookie)),
+                    tasks: [],
+                    score: 0,
+                    countrecords: 0
+                };
+                for(var i=0;i<contests[id].tasks.length;i++)
+                    pushdata.tasks.push({records:[],solved:false});
+                contests[id].users.push(pushdata);
             }
-            var word=req.body.word;
-            if(getrecords(Number(getCookie("loginid",req.headers.cookie)),id,taskid).solved)
-                res.status(200).json({error:"You have passed this task and cannot submit it again."});
-            else if(!checkword(word))res.status(200).json({error:"Word length must be 5 and it is a legal word."});
-            else{
-                var i=0;
-                while(i<contests[id].users.length&&contests[id].users[i].id!=Number(getCookie("loginid",req.headers.cookie)))i++;
-                if(i==contests[id].users.length){
-                    var pushdata={
-                        id: Number(getCookie("loginid",req.headers.cookie)),
-                        tasks: [],
-                        score: 0,
-                        countrecords: 0
-                    };
-                    for(var i=0;i<contests[id].tasks.length;i++)
-                        pushdata.tasks.push({records:[],solved:false});
-                    contests[id].users.push(pushdata);
-                }
-                var contestdata=contests[id].users;
-                i=0;
-                while(contestdata.length>i&&contestdata[i].id!=Number(getCookie("loginid",req.headers.cookie)))i++;
-                contests[id].users[i].tasks[taskid-1].records.push({word:word,time:new Date().getTime()});
-                if(word==contests[id].tasks[taskid-1].answer){
-                    contests[id].users[i].tasks[taskid-1].solved=true;
-                    contests[id].users[i].score++;
-                    contests[id].users[i].countrecords+=contests[id].users[i].tasks[taskid-1].records.length-1;
-                }
-                fs.writeFile("datas/contest.json",JSON.stringify({contests:contests}),(err)=>{
-                    if(err)console.log('[error] can\'t change save new submit: '+err);
-                    else console.log("[log] "+getUserdataById(Number(getCookie("loginid",req.headers.cookie))).name+" submited task #"+taskid+" in contest #"+id+".");
-                    res.status(200).json({success:true});
-                });
+            var contestdata=contests[id].users;
+            i=0;
+            while(contestdata.length>i&&contestdata[i].id!=Number(getCookie("loginid",req.headers.cookie)))i++;
+            contests[id].users[i].tasks[taskid-1].records.push({word:word,time:new Date().getTime()});
+            if(word==contests[id].tasks[taskid-1].answer){
+                contests[id].users[i].tasks[taskid-1].solved=true;
+                contests[id].users[i].score++;
+                contests[id].users[i].countrecords+=contests[id].users[i].tasks[taskid-1].records.length-1;
             }
+            fs.writeFile("datas/contest.json",JSON.stringify({contests:contests}),(err)=>{
+                if(err)console.log('[error] can\'t change save new submit: '+err);
+                else console.log("[log] "+getUserdataById(Number(getCookie("loginid",req.headers.cookie))).name+" submited task #"+taskid+" in contest #"+id+".");
+                res.status(200).json({success:true});
+            });
         }
     }
 });
@@ -756,41 +984,39 @@ app.get('/contest/*/ranking',(req,res)=>{
     var id=Math.floor(Number(req.url.split('/contest/')[1].split('/')[0]));
     if("/contest/"+String(id)+"/ranking"!=req.url)res.sendStatus(404);
     else{
-        if(!checklogin(req))res.redirect('/login');
-        else{
-            var rank=contests[id].users.sort((x,y)=>{
-                if(x.score==y.score)return x.countrecords-y.countrecords;
-                else return y.score-x.score;
-            });
-            var counttasks=contests[id].tasks.length;
-            var codes=`
+        var rank=contests[id].users.sort((x,y)=>{
+            if(x.score==y.score)return x.countrecords-y.countrecords;
+            else return y.score-x.score;
+        });
+        var counttasks=contests[id].tasks.length;
+        var codes=`
 <table border="1">
     <tr>
         <th>Ranking</th>
         <th>User</th>
         <th>Solved</th>
         <th>Records</th>`;
-            for(var i=0;i<counttasks;i++)
-                codes+=`<th style="min-width: 40px;"><a href="/contest/`+id+`/task/`+String(i+1)+`">T`+String(i+1)+`</th>`;
-            for(var i=0;i<rank.length;i++){
-                codes+=`<tr><th>`+String(i+1)+`</th><th><a href="/user/`
-                      +String(rank[i].id)+`">`+getUserdataById(rank[i].id).name
-                      +`</a></th><th>`+rank[i].score+`</th><th>`+String(rank[i].countrecords)+`</th></th>`;
-                for(var j=0;j<counttasks;j++)
-                    if(!rank[i].tasks[j].solved){
-                        if(rank[i].tasks[j].records.length>0)
-                            codes+=`<th><span style="color: red;">-`
-                                +String(rank[i].tasks[j].records.length)+`</span></th>`;
-                        else codes+=`<th></th>`;
-                    }
-                    else if(rank[i].tasks[j].records.length==1)
-                        codes+=`<th><span style="color: green;">+</span</th>`;
-                    else codes+=`<th><span style="color: green;">+`
-                        +String(rank[i].tasks[j].records.length-1)+`</span</th>`;
-                codes+=`</tr>`;
-            }
-            codes+=`</table>`;
-            res.send(`
+        for(var i=0;i<counttasks;i++)
+            codes+=`<th style="min-width: 40px;"><a href="/contest/`+id+`/task/`+String(i+1)+`">T`+String(i+1)+`</th>`;
+        for(var i=0;i<rank.length;i++){
+            codes+=`<tr><th>`+String(i+1)+`</th><th><a href="/user/`
+                    +String(rank[i].id)+`">`+getUserdataById(rank[i].id).name
+                    +`</a></th><th>`+rank[i].score+`</th><th>`+String(rank[i].countrecords)+`</th></th>`;
+            for(var j=0;j<counttasks;j++)
+                if(!rank[i].tasks[j].solved){
+                    if(rank[i].tasks[j].records.length>0)
+                        codes+=`<th><span style="color: red;">-`
+                            +String(rank[i].tasks[j].records.length)+`</span></th>`;
+                    else codes+=`<th></th>`;
+                }
+                else if(rank[i].tasks[j].records.length==1)
+                    codes+=`<th><span style="color: green;">+</span</th>`;
+                else codes+=`<th><span style="color: green;">+`
+                    +String(rank[i].tasks[j].records.length-1)+`</span</th>`;
+            codes+=`</tr>`;
+        }
+        codes+=`</table>`;
+        res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -808,17 +1034,14 @@ app.get('/contest/*/ranking',(req,res)=>{
         `+codes+`
     </body>
 </html>
-            `);
-        }
+        `);
     }
 });
 app.get('/pk',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else{
-        var codes="";
-        for(var i=0;i<rules.length;i++)
-            codes+=`<option value="`+i+`">`+rules[i].name+`</option>`;
-        res.send(`
+    var codes="";
+    for(var i=0;i<rules.length;i++)
+        codes+=`<option value="`+i+`">`+rules[i].name+`</option>`;
+    res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -896,65 +1119,62 @@ app.get('/pk',(req,res)=>{
         <p>Link: <span id="res-pk-url"></span></p>
     </body>
 </html>
-        `);
-    }
+    `);
 });
 app.get('/pk/*/play',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
+    var pkid=req.url.split('/pk/')[1].split('/')[0];
+    var i=0;
+    while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
+    if(i==pkcodes.length)res.redirect('/pk');
+    else if(checkpkfinish(i,pkcodes[i].code))res.redirect('/i');
     else{
-        var pkid=req.url.split('/pk/')[1].split('/')[0];
-        var i=0;
-        while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
-        if(i==pkcodes.length)res.redirect('/pk');
-        else if(checkpkfinish(i,pkcodes[i].code))res.redirect('/i');
-        else{
-            var uid=Number(getCookie("loginid",req.headers.cookie));
-            if(!pkcodes[i].started){
-                if(pkcodes[i].inviter==uid){
-                    res.redirect('/pk');
-                    return;
-                }
-                pkcodes[i].started=true;
-                pkcodes[i].participant=uid;
-                pkcodes[i].answer=easywords[parseInt(Math.random()*easywords.length)];
-                console.log("[log] "+getUserdataById(pkcodes[i].participant).name+" accepted "+getUserdataById(pkcodes[i].inviter).name+"'s invitation.")
-                delete pkcodes[i].failureTime;
-                pkcodes[i].startTime=new Date().getTime()+15000;
-                pkcodes[i].records={
-                    inviter: [],
-                    participant: []
-                };
-                pkcodes[i].status={
-                    timeout: {
-                        inviter: pkcodes[i].startTime+60000,
-                        participant: pkcodes[i].startTime+60000
-                    },
-                    lastsubmit: {
-                        inviter: pkcodes[i].startTime,
-                        participant: pkcodes[i].startTime
-                    }
+        var uid=Number(getCookie("loginid",req.headers.cookie));
+        if(!pkcodes[i].started){
+            if(pkcodes[i].inviter==uid){
+                res.redirect('/pk');
+                return;
+            }
+            pkcodes[i].started=true;
+            pkcodes[i].participant=uid;
+            pkcodes[i].answer=easywords[parseInt(Math.random()*easywords.length)];
+            console.log("[log] "+getUserdataById(pkcodes[i].participant).name+" accepted "+getUserdataById(pkcodes[i].inviter).name+"'s invitation.")
+            delete pkcodes[i].failureTime;
+            pkcodes[i].startTime=new Date().getTime()+15000;
+            pkcodes[i].records={
+                inviter: [],
+                participant: []
+            };
+            pkcodes[i].status={
+                timeout: {
+                    inviter: pkcodes[i].startTime+60000,
+                    participant: pkcodes[i].startTime+60000
+                },
+                lastsubmit: {
+                    inviter: pkcodes[i].startTime,
+                    participant: pkcodes[i].startTime
                 }
             }
-            if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant){
-                res.redirect('/pk'); return;
-            }
-            fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
-            var recs;
-            if(pkcodes[i].inviter==uid) recs=pkcodes[i].records.inviter;
-            else                        recs=pkcodes[i].records.participant;
-            var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
-            for(var j=recs.length-1;j>=0;j--)
-                recordcode+=`<tr><th>${j+1}</th>
-                    <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,false)}</th></tr>`;
-            recordcode+=`</table>`;
-            if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
-            else                        recs=pkcodes[i].records.participant;
-            var recordcode2="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
-            for(var j=recs.length-1;j>=0;j--)
-                recordcode2+=`<tr><th>${j+1}</th>
-                    <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
-            recordcode2+=`</table>`;
-            res.send(`
+        }
+        if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant){
+            res.redirect('/pk'); return;
+        }
+        fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
+        var recs;
+        if(pkcodes[i].inviter==uid) recs=pkcodes[i].records.inviter;
+        else                        recs=pkcodes[i].records.participant;
+        var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        for(var j=recs.length-1;j>=0;j--)
+            recordcode+=`<tr><th>${j+1}</th>
+                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,false)}</th></tr>`;
+        recordcode+=`</table>`;
+        if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
+        else                        recs=pkcodes[i].records.participant;
+        var recordcode2="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        for(var j=recs.length-1;j>=0;j--)
+            recordcode2+=`<tr><th>${j+1}</th>
+                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
+        recordcode2+=`</table>`;
+        res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -1037,134 +1257,122 @@ app.get('/pk/*/play',(req,res)=>{
         <div id="records2">${recordcode2}</div>
     </body>
 </html>
-            `);
-        }
+        `);
     }
 });
 app.post('/pk/status',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else{
-        var uid=Number(getCookie("loginid",req.headers.cookie));
-        var pkid=req.body.code,i=0;
-        while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
-        if(i==pkcodes.length)res.redirect('/pk');
-        else if(checkpkfinish(i,pkid))res.redirect('/i');
-        else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
-        else if(pkcodes[i].started){
-            var recs;
-            if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
-            else                        recs=pkcodes[i].records.participant;
-            var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
-            for(var j=recs.length-1;j>=0;j--)
-                recordcode+=`<tr><th>${j+1}</th>
-                    <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
-            recordcode+=`</table>`;
-            res.status(200).json({
-                started: true,
-                total: {
-                    inviter: pkcodes[i].records.inviter.length,
-                    participant: pkcodes[i].records.participant.length
-                },
-                lastsubmit: pkcodes[i].status.lastsubmit,
-                startTime: pkcodes[i].startTime,
-                timeout: uid==pkcodes[i].inviter
-                         ?pkcodes[i].status.timeout.inviter
-                         :pkcodes[i].status.timeout.participant,
-                records: recordcode
-            });
-        }
-        else res.status(200).json({started:false});
+    var uid=Number(getCookie("loginid",req.headers.cookie));
+    var pkid=req.body.code,i=0;
+    while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
+    if(i==pkcodes.length)res.redirect('/pk');
+    else if(checkpkfinish(i,pkid))res.redirect('/i');
+    else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
+    else if(pkcodes[i].started){
+        var recs;
+        if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
+        else                        recs=pkcodes[i].records.participant;
+        var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        for(var j=recs.length-1;j>=0;j--)
+            recordcode+=`<tr><th>${j+1}</th>
+                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
+        recordcode+=`</table>`;
+        res.status(200).json({
+            started: true,
+            total: {
+                inviter: pkcodes[i].records.inviter.length,
+                participant: pkcodes[i].records.participant.length
+            },
+            lastsubmit: pkcodes[i].status.lastsubmit,
+            startTime: pkcodes[i].startTime,
+            timeout: uid==pkcodes[i].inviter
+                        ?pkcodes[i].status.timeout.inviter
+                        :pkcodes[i].status.timeout.participant,
+            records: recordcode
+        });
     }
+    else res.status(200).json({started:false});
 });
 app.post('/pk/*/submit',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
+    var uid=Number(getCookie("loginid",req.headers.cookie));
+    var pkid=req.url.split('/pk/')[1].split('/')[0];
+    var i=0;
+    while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
+    if(i==pkcodes.length||!pkcodes[i].started)res.redirect('/pk');
+    else if(checkpkfinish(i,pkid))res.redirect('/i');
+    else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
     else{
-        var uid=Number(getCookie("loginid",req.headers.cookie));
-        var pkid=req.url.split('/pk/')[1].split('/')[0];
-        var i=0;
-        while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
-        if(i==pkcodes.length||!pkcodes[i].started)res.redirect('/pk');
-        else if(checkpkfinish(i,pkid))res.redirect('/i');
-        else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
+        if(new Date().getTime()<pkcodes[i].startTime){
+            res.status(200).json({error:"The pk hasn't started yet."});
+            return;
+        }
+        var word=req.body.word;
+        if(pkcodes[i].inviter==uid&&pkcodes[i].records.inviter[pkcodes[i].records.inviter.length-1]==pkcodes[i].answer)
+            res.status(200).json({error:"You have passed this task and cannot submit it again."});
+        else if(pkcodes[i].participant==uid&&pkcodes[i].records.participant[pkcodes[i].records.participant.length-1]==pkcodes[i].answer)
+            res.status(200).json({error:"You have passed this task and cannot submit it again."});
+        else if(!checkword(word))res.status(200).json({error:"Word length must be 5 and it is a legal word."});
         else{
-            if(new Date().getTime()<pkcodes[i].startTime){
-                res.status(200).json({error:"The pk hasn't started yet."});
-                return;
+            var submittime=new Date().getTime();
+            if(pkcodes[i].inviter==uid){
+                pkcodes[i].records.inviter.push(word);
+                pkcodes[i].status.lastsubmit.inviter=submittime;
+                pkcodes[i].status.timeout.inviter=submittime+120000;
             }
-            var word=req.body.word;
-            if(pkcodes[i].inviter==uid&&pkcodes[i].records.inviter[pkcodes[i].records.inviter.length-1]==pkcodes[i].answer)
-                res.status(200).json({error:"You have passed this task and cannot submit it again."});
-            else if(pkcodes[i].participant==uid&&pkcodes[i].records.participant[pkcodes[i].records.participant.length-1]==pkcodes[i].answer)
-                res.status(200).json({error:"You have passed this task and cannot submit it again."});
-            else if(!checkword(word))res.status(200).json({error:"Word length must be 5 and it is a legal word."});
             else{
-                var submittime=new Date().getTime();
-                if(pkcodes[i].inviter==uid){
-                    pkcodes[i].records.inviter.push(word);
-                    pkcodes[i].status.lastsubmit.inviter=submittime;
-                    pkcodes[i].status.timeout.inviter=submittime+120000;
-                }
-                else{
-                    pkcodes[i].records.participant.push(word);
-                    pkcodes[i].status.lastsubmit.participant=submittime;
-                    pkcodes[i].status.timeout.participant=submittime+120000;
-                }
-                fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
-                res.status(200).json({success:true});
+                pkcodes[i].records.participant.push(word);
+                pkcodes[i].status.lastsubmit.participant=submittime;
+                pkcodes[i].status.timeout.participant=submittime+120000;
             }
+            fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
+            res.status(200).json({success:true});
         }
     }
 });
 app.post('/pk/create',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
+    var uid=Number(getCookie("loginid",req.headers.cookie));
+    var rule=Number(req.body.rule);
+    var id=getidofuser(uid);
+    if(userdata.users[id].data.pk.coolingEndTime>new Date().getTime())
+        res.status(200).json({error:"The cooling time is not over yet. ("
+            +String(parseInt((userdata.users[id].data.pk.coolingEndTime-new Date().getTime())/60000))+" minute(s) left)"});
     else{
-        var uid=Number(getCookie("loginid",req.headers.cookie));
-        var rule=Number(req.body.rule);
-        var id=getidofuser(uid);
-        if(userdata.users[id].data.pk.coolingEndTime>new Date().getTime())
-            res.status(200).json({error:"The cooling time is not over yet. ("
-                +String(parseInt((userdata.users[id].data.pk.coolingEndTime-new Date().getTime())/60000))+" minute(s) left)"});
-        else{
-            var nowtime=new Date().getTime();
-            userdata.users[id].data.pk.coolingEndTime=nowtime+300000;
-            pkcodes.push({
-                inviter: uid,
-                code: newpkcode(),
-                rule: rules[rule].name,
-                failureTime: nowtime+600000,
-                started: false
-            });
-            fs.writeFile("datas/users.json",JSON.stringify(userdata),(err)=>{});
-            fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
-            console.log(`[log] ${userdata.users[id].name} created a new pk code: ${pkcodes[pkcodes.length-1].code}`);
-            res.status(200).json({
-                code: pkcodes[pkcodes.length-1].code,
-                coolingEndTime: userdata.users[id].data.pk.coolingEndTime,
-                failureTime: pkcodes[pkcodes.length-1].failureTime
-            });
-        }
+        var nowtime=new Date().getTime();
+        userdata.users[id].data.pk.coolingEndTime=nowtime+300000;
+        pkcodes.push({
+            inviter: uid,
+            code: newpkcode(),
+            rule: rules[rule].name,
+            failureTime: nowtime+600000,
+            started: false
+        });
+        fs.writeFile("datas/users.json",JSON.stringify(userdata),(err)=>{});
+        fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
+        console.log(`[log] ${userdata.users[id].name} created a new pk code: ${pkcodes[pkcodes.length-1].code}`);
+        res.status(200).json({
+            code: pkcodes[pkcodes.length-1].code,
+            coolingEndTime: userdata.users[id].data.pk.coolingEndTime,
+            failureTime: pkcodes[pkcodes.length-1].failureTime
+        });
     }
 });
 app.get('/pk/*/view',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
+    var id=parseInt(Number(req.url.split('/pk/')[1].split('/')[0]));
+    if(`/pk/${id}/view`!=req.url)res.sendStatus(404);
+    else if(id<0||pkdata.length<=id)res.sendStatus(404);
     else{
-        var id=parseInt(Number(req.url.split('/pk/')[1].split('/')[0]));
-        if(`/pk/${id}/view`!=req.url)res.sendStatus(404);
-        else if(id<0||pkdata.length<=id)res.sendStatus(404);
-        else{
-            var recs=pkdata[id].records.inviter;
-            var inviterrecords="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
-            for(var j=recs.length-1;j>=0;j--)
-                inviterrecords+=`<tr><th>${j+1}</th>
-                    <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th></tr>`;
-            inviterrecords+=`</table>`;
-            recs=pkdata[id].records.participant;
-            var participantrecords="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
-            for(var j=recs.length-1;j>=0;j--)
-                participantrecords+=`<tr><th>${j+1}</th>
-                    <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th></tr>`;
-            participantrecords+=`</table>`;
-            res.send(`
+        var recs=pkdata[id].records.inviter;
+        var inviterrecords="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        for(var j=recs.length-1;j>=0;j--)
+            inviterrecords+=`<tr><th>${j+1}</th>
+                <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th></tr>`;
+        inviterrecords+=`</table>`;
+        recs=pkdata[id].records.participant;
+        var participantrecords="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        for(var j=recs.length-1;j>=0;j--)
+            participantrecords+=`<tr><th>${j+1}</th>
+                <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th></tr>`;
+        participantrecords+=`</table>`;
+        res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -1193,15 +1401,12 @@ app.get('/pk/*/view',(req,res)=>{
         ${participantrecords}
     </body>
 </html>
-            `);
-        }
+        `);
     }
 });
 
 app.get('/ranking',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else{
-        res.send(`
+    res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -1219,14 +1424,11 @@ app.get('/ranking',(req,res)=>{
         <div style=""></div>
     </body>
 </html>
-        `);
-    }
+    `);
 });
 
 app.get('/answer',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else{
-        res.send(`
+    res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -1278,17 +1480,13 @@ app.get('/answer',(req,res)=>{
         <p>The day's answer is "<span id="result"></span>".</p>
     </body>
 </html>
-        `);
-    }
+    `);
 });
 app.post('/answer/query',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else{
-        var nowtime=new Date(req.body.date).getTime();
-        nowtime/=1000*60*60*24;
-        nowtime=Math.floor(nowtime-324-2/3)%easywords.length;
-        res.json({answer:easywords[nowtime]});
-    }
+    var nowtime=new Date(req.body.date).getTime();
+    nowtime/=1000*60*60*24;
+    nowtime=Math.floor(nowtime-324-2/3)%easywords.length;
+    res.json({answer:easywords[nowtime]});
 });
 
 app.listen(8699,()=>{
