@@ -42,6 +42,135 @@ fs.readFile("datas/chat.json",'utf8',(err,data)=>{
     chat=JSON.parse(data);
 });
 
+function makebytemplate(title,head,showed,username,data){
+    return `
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">${title} - Wordle</title>
+        <script src="/f/TopanUI/src/jquery.js"></script>
+        <link rel="stylesheet" href="/f/TopanUI/topan.css">
+        <script src="/f/TopanUI/topan.js"></script>
+        <script>
+            function setCookie(name,value,daysToLive){
+                var cookie=name+"="+encodeURIComponent(value)+"; path=/";
+                if(typeof daysToLive==="number"&&daysToLive!=0){
+                    cookie+="; max-age="+(daysToLive*24*60*60);
+                }
+                document.cookie=cookie;
+            };
+            $(document).ready(()=>{
+                $("#system-logout").click(()=>{
+                    setCookie("logined","",0);
+                    setCookie("loginname","",0);
+                    setCookie("loginchecker","",0);
+                    setCookie("loginid","",0);
+                    location.pathname="";
+                })
+            });
+        </script>
+        ${head}
+    </head>
+    <body>
+        <div class="topan-header">
+            <div class="topan-header-home">
+                <a href="/">
+                    <button class="topan-button-ordinary topan-button-commonly topan-button-header-round-left">
+                        <i class="fa fa-home"></i>
+                    </button>
+                </a>
+            </div>
+            <div class="topan-header-left">
+                <span class="topan-header-text">Wordle&nbsp;</span>
+                <a href="/contests">
+                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="contests"?"-showed":""}">
+                        <i class="fa fa-solid fa-fire"></i>
+                        <span>&nbsp;Contests</span>
+                    </span>
+                </a>
+                <a href="/pk">
+                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="pk"?"-showed":""}">
+                        <i class="fa fa-solid fa-paper-plane"></i>
+                        <span>&nbsp;1v1 PK</span>
+                    </span>
+                </a>
+                <a href="/ranking">
+                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="ranking"?"-showed":""}">
+                        <i class="fa fa-solid fa-ranking-star"></i>
+                        <span>&nbsp;Ranking</span>
+                    </span>
+                </a>
+                <a href="/app">
+                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="app"?"-showed":""}">
+                        <i class="fa fa-solid fa-bars"></i>
+                        <span>&nbsp;Application</span>
+                    </span>
+                </a>
+            </div>
+            <div class="topan-header-right">
+                <a href="${username==null?"/login":"/i"}">
+                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="app"?"-showed":""}">
+                        <i class="fa fa-solid fa-user"></i>
+                        <span>&nbsp;${username==null?"Login":username}</span>
+                    </span>
+                </a>
+                ${username!=null?`
+                    <span id="system-logout" class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="app"?"-showed":""}">
+                        <i class="fa fa-solid fa-right-from-bracket"></i>
+                    </span>
+                    <a href="/i/settings">
+                        <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="app"?"-showed":""}">
+                            <i class="fa fa-solid fa-gear"></i>
+                        </span>
+                    </a>
+                `:""}
+            </div>
+        </div>
+        <div class="topan-outer">
+            <div class="topan-page">
+                <div class="topan-mainpage-auto">
+                    <br>
+                    ${data}
+                    <br>
+                </div>
+                <footer class="topan-footer">
+                    <p></p>
+                    <p style="text-align: center; color: #555; font-size: 12px;">
+                        Powered by <a href="//github.com/topan-dev/wordlesystem">Wordle System</a> alpha&nbsp;&nbsp;&nbsp;© 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>
+                    </p>
+                </footer>
+            </div>
+        </div>
+    </body>
+</html>
+    `;
+}
+function getRuleDescribeHTML(rule){
+    var i=0;
+    while(rules.length>i&&rules[i].name!=rule)i++;
+    if(rules.length==i)return null;
+    return `
+<div class='topan-tab'>
+    <ul>
+        <li class='topan-tab-showed'>中文</li>
+        <li>English</li>
+        <li>日本語</li>
+    </ul>
+    <div class='topan-tab-showed'>
+        ${rules[i].lang.zh}
+    </div>
+    <div>
+        ${rules[i].lang.en}
+    </div>
+    <div>
+        ${rules[i].lang.ko}
+    </div>
+</div>
+    `;
+}
+
 function getUserdataById(id){
     var i=0;
     while(userdata.users.length>i&&userdata.users[i].id!=id)i++;
@@ -52,12 +181,6 @@ function getidofuser(uid){
     var i=0;
     while(userdata.users.length>i&&userdata.users[i].id!=uid)i++;
     return i;
-}
-function getRuleDescribe(rule){
-    var i=0;
-    while(rules.length>i&&rules[i].name!=rule)i++;
-    if(rules.length==i)return null;
-    else return rules[i].describe;
 }
 function getrecords(uid,cid,tid){
     var contestdata=contests[cid].users;
@@ -132,6 +255,9 @@ function checklogin(req){
     while(userdata.users.length>i&&userdata.users[i].id!=Number(getCookie("loginid",req.headers.cookie)))i++;
     if(userdata.users.length==i)return false;
     else return password_hash_second(getCookie("loginchecker",req.headers.cookie))==userdata.users[i].checker;
+}
+function getusername(req){
+    return checklogin(req)?getUserdataById(getCookie("loginid",req.headers.cookie)).name:null;
 }
 function wordlechecker(myans,answer,type,noletter){
     if(myans==answer){
@@ -323,7 +449,15 @@ app.get('/f/*',(req,res)=>{
 app.get('/',(req,res)=>{
     var rulesdescribe="";
     for(var i=0;i<rules.length;i++)
-        rulesdescribe+=`<h4>${rules[i].name}</h4>${rules[i].describe}`;
+        rulesdescribe+=`<h4>${rules[i].name}</h4>${getRuleDescribeHTML(rules[i].name)}`;
+    res.send(makebytemplate("Home","",null,getusername(req),`
+<div class="topan-section-shadow">
+    <h3>Rules Describe</h3>
+    ${rulesdescribe}
+    <p><strong>我们欢迎您向我们提供新规则。</strong></p>
+</div>
+    `));
+    return;
     res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -926,7 +1060,7 @@ app.get('/contest/*/task/*',(req,res)=>{
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
         <p>Checker: `+contests[id].tasks[taskid-1].rule+`</p>
         <h4>Rule Describe</h4>
-        `+getRuleDescribe(contests[id].tasks[taskid-1].rule)+`
+        `+getRuleDescribeHTML(contests[id].tasks[taskid-1].rule)+`
         <h4>Submit</h4>
         <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
         <h4>Records</h4>
@@ -1247,7 +1381,7 @@ app.get('/pk/*/play',(req,res)=>{
         <p><a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a>'s last submission time: <span id="lastsubmittime-participant"></span></p>
         <p>Checker: ${pkcodes[i].rule}</p>
         <h4>Rule Describe</h4>
-        ${getRuleDescribe(pkcodes[i].rule)}
+        ${getRuleDescribeHTML(pkcodes[i].rule)}
         <p id="gamestart"><strong>Game will start after <span id="starttime"></span></strong></p>
         <h4>Submit (Please submit within <span id="submittimelimit"></span>)</h4>
         <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
@@ -1394,7 +1528,7 @@ app.get('/pk/*/view',(req,res)=>{
         <p>Start at ${new Date(pkdata[id].startTime).toLocaleString()}</p>
         <p>Rule: ${pkdata[id].rule}</p>
         <h4>Rule Describe</h4>
-        ${getRuleDescribe(pkdata[id].rule)}
+        ${getRuleDescribeHTML(pkdata[id].rule)}
         <h4><a href="/user/${pkdata[id].inviter}">${getUserdataById(pkdata[id].inviter).name}</a>'s Records</h4>
         ${inviterrecords}
         <h4><a href="/user/${pkdata[id].participant}">${getUserdataById(pkdata[id].participant).name}</a>'s Records</h4>
