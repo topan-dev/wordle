@@ -626,7 +626,7 @@ app.post("/chat/private/*/send", (req, res) => {
     if (!chat.private[req.smalluid][req.biguid]) {
         chat.private[req.smalluid][req.biguid] = {messages: []};
     }
-    chat.private[req.smalluid][req.biguid].messages.push({uid: req.fromuid, content: content, username: userdata.users[req.fromuid].name, time: new Date().toLocaleString()});
+    chat.private[req.smalluid][req.biguid].messages.push({uid: req.fromuid, content: content, username: userdata.users[req.fromuser].name, time: new Date().toLocaleString()});
     fs.writeFile("datas/chat.json",JSON.stringify(chat), (err) => {});
     res.status(200).json({status: 200});
 });
@@ -698,7 +698,7 @@ app.get("/chat/private/*", (req, res) => {
     <body>
         <h3>Chat</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <h2>对 ${userdata.users[req.touid].name} 私聊 </h2>
+        <h2>对 ${userdata.users[getidofuser(req.touid)].name} 私聊 </h2>
         <div id="chat">
         </div>
         <input placeholder="Type your message" id="message"></input>
@@ -711,7 +711,7 @@ app.post("/chat/group/*/send", (req, res) => {
     var userid = Number(getCookie("loginid",req.headers.cookie));
     var content = req.body.content;
     var groupid = Number(req.url.split("/chat/group/")[1].split("/send")[0]);
-    chat.groups[groupid].messages.push({uid: userid, content: content, username: userdata.users[userid].name, time: new Date().toLocaleString()});
+    chat.groups[groupid].messages.push({uid: userid, content: content, username: userdata.users[getidofuser(userid)].name, time: new Date().toLocaleString()});
     fs.writeFile("datas/chat.json",JSON.stringify(chat), (err) => {});
     res.status(200).json({status: 200});
 });
