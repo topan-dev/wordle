@@ -318,6 +318,8 @@ app.get('/',(req,res)=>{
         <title id="title">Home</title>
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/control.js" type="text/javascript" charset="utf-8"></script>
+	<link rel="stylesheet" type="text/css" href="/f/style.css">
         <style>
         </style>
     </head>
