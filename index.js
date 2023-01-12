@@ -577,26 +577,24 @@ app.get('/chat',(req,res)=>{
         <title id="title">Chat</title>
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
-        <style>
-        </style>
         <script>
-        $(document).ready(function(){
-            $("#enterGroup").click(function() {
-                window.location.href = "/chat/group/" + $("#input-group-id").val();
+            $(document).ready(function(){
+                $("#enterGroup").click(function() {
+                    window.location.href = "/chat/group/" + $("#input-group-id").val() + "/view";
+                });
+                $("#enterPrivate").click(function() {
+                    window.location.href = "/chat/private/" + $("#input-user-id").val();
+                });
             });
-            $("#enterPrivate").click(function() {
-                window.location.href = "/chat/private/" + $("#input-user-id").val();
-            });
-        });
         </script>
     </head>
     <body>
         <h3>Chat</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
         <div>
-            <p>单聊：</p>
+            <p>私聊：（输入用户 ID）</p>
             <input placeholder="User id" id="input-user-id"></input><button id="enterPrivate">Enter</button>
-            <p>群聊：</p>
+            <p>群聊：（输入群 ID）</p>
             <input placeholder="Group id" id="input-group-id"></input><button id="enterGroup">Enter</button>
         </div>
     </body>
@@ -606,6 +604,10 @@ app.get('/chat',(req,res)=>{
 app.all("/chat/private/*", (req, res, next) => {
     req.fromuid = Number(getCookie("loginid",req.headers.cookie));
     req.touid = Number(req.url.split("/chat/private/")[1].split("/")[0]);
+    if(req.touid<0||req.touid>=userdata.users.length){
+        res.redirect("/chat");
+        return;
+    }
     req.fromuser = req.smalluid = getidofuser(req.fromuid);
     req.touser = req.biguid = getidofuser(req.touid);
     if (req.smalluid > req.biguid) {
@@ -623,7 +625,7 @@ app.post("/chat/private/*/send", (req, res) => {
     if (!chat.private[req.smalluid][req.biguid]) {
         chat.private[req.smalluid][req.biguid] = {messages: []};
     }
-    chat.private[req.smalluid][req.biguid].messages.push({uid: req.fromuid, content: content, username: userdata.users[req.fromuser].name, time: new Date().toLocaleString()});
+    chat.private[req.smalluid][req.biguid].messages.push({uid: req.fromuid, content: content, time: new Date().getTime()});
     fs.writeFile("datas/chat.json",JSON.stringify(chat), (err) => {});
     res.status(200).json({status: 200});
 });
@@ -634,10 +636,15 @@ app.get("/chat/private/*/get", (req, res) => {
     if (!chat.private[req.smalluid][req.biguid]) {
         chat.private[req.smalluid][req.biguid] = {messages: []};
     }
-    res.send(chat.private[req.smalluid][req.biguid].messages.slice(req.query.renderedDatas,));
+    var temp=chat.private[req.smalluid][req.biguid].messages.slice(req.query.renderedDatas,);
+    for(var i=0;i<temp.length;i++)
+        temp[i].username=getUserdataById(temp[i].uid).name,
+        temp[i].time=new Date(temp[i].time).toLocaleString();
+    res.send(temp);
 });
 app.get("/chat/private/*", (req, res) => {
-    res.send(`
+    if(`/chat/private/${req.touid}`==req.url)
+        res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
@@ -702,26 +709,48 @@ app.get("/chat/private/*", (req, res) => {
         <button id="send">Send</button>
     </body>
 </html>
-    `);
+        `);
+    else res.redirect("/chat");
 });
 app.post("/chat/group/*/send", (req, res) => {
     var userid = Number(getCookie("loginid",req.headers.cookie));
     var content = req.body.content;
-    var groupid = Number(req.url.split("/chat/group/")[1].split("/send")[0]);
-    chat.groups[groupid].messages.push({uid: userid, content: content, username: userdata.users[getidofuser(userid)].name, time: new Date().toLocaleString()});
+    var groupid = parseInt(Number(req.url.split("/chat/group/")[1].split("/")[0]));
+    if(`/chat/group/${groupid}/send`!=req.url||groupid<0||groupid>=chat.groups.length){
+        res.redirect("/chat"); return;
+    }
+    var group = chat.groups[groupid];
+    if ((!(0 in group.members)) && (!(user in group.members))) {
+        res.redirect("/chat"); return;
+    }
+    chat.groups[groupid].messages.push({uid: userid, content: content, time: new Date().getTime()});
     fs.writeFile("datas/chat.json",JSON.stringify(chat), (err) => {});
     res.status(200).json({status: 200});
 });
 app.get("/chat/group/*/get", (req, res) => {
-    var groupid = Number(req.url.split("/chat/group/")[1].split("/get")[0]);
-    res.send(chat.groups[groupid].messages.slice(req.query.renderedDatas,));
-});
-app.get("/chat/group/*", (req, res) => {
-    var user = getCookie("loginid",req.headers.cookie);
-    var groupid = Number(req.url.split("/chat/group/")[1]);
+    var groupid = parseInt(Number(req.url.split("/chat/group/")[1].split("/")[0]));
+    if(`/chat/group/${groupid}/get`!=req.url.split("?")[0]||groupid<0||groupid>=chat.groups.length){
+        res.redirect("/"); return;
+    }
     var group = chat.groups[groupid];
-    if ((group.members !== "allusers") && (!(user in group.members))) {
-        res.send("<h2>You are not in this group.</h2>");
+    if ((!(0 in group.members)) && (!(user in group.members))) {
+        res.redirect("/chat"); return;
+    }
+    var temp=chat.groups[groupid].messages.slice(req.query.renderedDatas,);
+    for(var i=0;i<temp.length;i++)
+        temp[i].username=getUserdataById(temp[i].uid).name,
+        temp[i].time=new Date(temp[i].time).toLocaleString();
+    res.send(temp);
+});
+app.get("/chat/group/*/view", (req, res) => {
+    var user = getCookie("loginid",req.headers.cookie);
+    var groupid = parseInt(Number(req.url.split("/chat/group/")[1].split("/")[0]));
+    if(`/chat/group/${groupid}/view`!=req.url||groupid<0||groupid>=chat.groups.length){
+        res.redirect("/chat"); return;
+    }
+    var group = chat.groups[groupid];
+    if ((!(0 in group.members)) && (!(user in group.members))) {
+        res.redirect("/chat"); return;
     } else {
         res.send(`
 <!DOCTYPE html>
@@ -744,7 +773,7 @@ app.get("/chat/group/*", (req, res) => {
                 function getMessage() {
                     $.ajax({
                         method: "GET",
-                        url: location.href + "/get",
+                        url: "/chat/group/${groupid}/get",
                         data: {
                             renderedDatas: dataRendered.length
                         },
@@ -764,7 +793,7 @@ app.get("/chat/group/*", (req, res) => {
                 }
                 function sendMessage(content) {
                     $.ajax({
-                        url: location.href + "/send",
+                        url: "/chat/group/${groupid}/send",
                         method: "POST",
                         data: {
                             content: content
@@ -786,6 +815,38 @@ app.get("/chat/group/*", (req, res) => {
         </div>
         <input placeholder="Type your message" id="message"></input>
         <button id="send">Send</button>
+    </body>
+</html>
+        `);
+    }
+});
+
+app.get('/contests',(req,res)=>{
+    if(!checklogin(req))res.redirect('/login');
+    else{
+        var codes="";
+        for(var i=0;i<contests.length;i++){
+            codes+=`<p><button onclick="location.pathname='/contest/${i}/home';">${contests[i].title}</button
+            > By <a href="/user/${contests[i].author}">${getUserdataById(contests[i].author).name}</a
+            >, Start at ${new Date(contests[i].openTime).toLocaleString()}</p>`;
+        }
+        res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">Contest List</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <style>
+        </style>
+    </head>
+    <body>
+        <h3>Contest List</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <p>Total: ${contests.length}</p>
+        ${codes}
     </body>
 </html>
         `);
