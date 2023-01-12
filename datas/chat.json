@@ -1,0 +1,12 @@
+{
+    "groups": [
+        {
+            "id": 0,
+            "name": "System",
+            "members": "allusers",
+            "messages": []
+        }
+    ],
+    "private": [
+    ]
+}
