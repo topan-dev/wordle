@@ -202,7 +202,7 @@ function newpkcode(){
 }
 function transferpkdata(id,code,res){
     if(id>=pkcodes.length||pkcodes[id].code!=code)return;
-    var temp=pkcodes[id];
+    var temp=pkcodes[id]; temp.winner=res;
     delete temp.started; delete temp.status;
     pkcodes.splice(id,1); pkdata.push(temp);
     userdata.users[getidofuser(temp.inviter)].data.pk.history.push(pkdata.length-1);
@@ -227,12 +227,20 @@ function checkpkfinish(id,code){
             return true;
         }
         else if(inviterfinished){
-            transferpkdata(id,code,pkcodes[id].inviter);
-            return true;
+            if(pkcodes[id].records.participant.length>=pkcodes[id].records.inviter.length
+                ||pkcodes[id].status.timeout.participant<=new Date().getTime()){
+                transferpkdata(id,code,pkcodes[id].inviter);
+                return true;
+            }
+            else return false;
         }
         else if(participantfinished){
-            transferpkdata(id,code,pkcodes[id].participant);
-            return true;
+            if(pkcodes[id].records.inviter.length>=pkcodes[id].records.participant.length
+                ||pkcodes[id].status.timeout.inviter<=new Date().getTime()){
+                transferpkdata(id,code,pkcodes[id].participant);
+                return true;
+            }
+            else return false;
         }
         else{
             var invitertimeouted=pkcodes[id].status.timeout.inviter<=new Date().getTime();
@@ -438,6 +446,16 @@ app.get('/user/*',(req,res)=>{
                 res.sendStatus(404);
                 return;
             }
+            var usrdata2=usrdata.data.pk.history;
+            var pkrecords="<table border='1'><tr><th>ID</th><th>Code</th><th>Inviter</th><th>Participant</th><th>Winner</th><th>Answer</th><th>Rule</th><th>Time</th></tr>";
+            for(var j=usrdata2.length-1;j>=0;j--)
+                pkrecords+=`<tr><th><a href="/pk/${usrdata2[j]}/view">${usrdata2[j]}</a></th><th>${pkdata[usrdata2[j]].code}</th>
+                    <th><a href="/user/${pkdata[usrdata2[j]].inviter}">${getUserdataById(pkdata[usrdata2[j]].inviter).name}</th>
+                    <th><a href="/user/${pkdata[usrdata2[j]].participant}">${getUserdataById(pkdata[usrdata2[j]].participant).name}</th>
+                    <th><a href="/user/${pkdata[usrdata2[j]].winner}">${getUserdataById(pkdata[usrdata2[j]].winner).name}</th>
+                    <th>${pkdata[usrdata2[j]].answer}</th><th>${pkdata[usrdata2[j]].rule}</th>
+                    <th>${new Date(pkdata[usrdata2[j]].startTime).toLocaleString()}</th></tr>`;
+            pkrecords+=`</table>`;
             res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -456,11 +474,17 @@ app.get('/user/*',(req,res)=>{
         <p>Username: ${usrdata.name}</p>
         <p>User ID: ${usrdata.id}</p>
         <p>Privilege Level: ${usrdata.admin?'Admin':'Ordinary'}</p>
+        <h4>PK Records</h4>
+        ${pkrecords}
     </body>
 </html>
             `);
         }
     }
+});
+app.get('/i',(req,res)=>{
+    if(!checklogin(req))res.redirect('/login');
+    else res.redirect(`/user/${getCookie("loginid",req.headers.cookie)}`);
 });
 app.get('/i/settings',(req,res)=>{
     if(!checklogin(req))res.redirect('/login');
@@ -878,7 +902,7 @@ app.get('/pk/*/play',(req,res)=>{
         var i=0;
         while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
         if(i==pkcodes.length)res.redirect('/pk');
-        else if(checkpkfinish(i,pkcodes[i].code))res.redirect('/pk');
+        else if(checkpkfinish(i,pkcodes[i].code))res.redirect('/i');
         else{
             var uid=Number(getCookie("loginid",req.headers.cookie));
             if(!pkcodes[i].started){
@@ -1020,7 +1044,7 @@ app.post('/pk/status',(req,res)=>{
         var pkid=req.body.code,i=0;
         while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
         if(i==pkcodes.length)res.redirect('/pk');
-        else if(checkpkfinish(i,pkid))res.redirect('/pk');
+        else if(checkpkfinish(i,pkid))res.redirect('/i');
         else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
         else if(pkcodes[i].started){
             var recs;
@@ -1056,7 +1080,7 @@ app.post('/pk/*/submit',(req,res)=>{
         var i=0;
         while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
         if(i==pkcodes.length||!pkcodes[i].started)res.redirect('/pk');
-        else if(checkpkfinish(i,pkid))res.redirect('/pk');
+        else if(checkpkfinish(i,pkid))res.redirect('/i');
         else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
         else{
             if(new Date().getTime()<pkcodes[i].startTime){
@@ -1114,6 +1138,58 @@ app.post('/pk/create',(req,res)=>{
                 coolingEndTime: userdata.users[id].data.pk.coolingEndTime,
                 failureTime: pkcodes[pkcodes.length-1].failureTime
             });
+        }
+    }
+});
+app.get('/pk/*/view',(req,res)=>{
+    if(!checklogin(req))res.redirect('/login');
+    else{
+        var id=parseInt(Number(req.url.split('/pk/')[1].split('/')[0]));
+        if(`/pk/${id}/view`!=req.url)res.sendStatus(404);
+        else if(id<0||pkdata.length<=id)res.sendStatus(404);
+        else{
+            var recs=pkdata[id].records.inviter;
+            var inviterrecords="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+            for(var j=recs.length-1;j>=0;j--)
+                inviterrecords+=`<tr><th>${j+1}</th>
+                    <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th></tr>`;
+            inviterrecords+=`</table>`;
+            recs=pkdata[id].records.participant;
+            var participantrecords="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+            for(var j=recs.length-1;j>=0;j--)
+                participantrecords+=`<tr><th>${j+1}</th>
+                    <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th></tr>`;
+            participantrecords+=`</table>`;
+            res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">1v1 PK arena</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <script>
+        </script>
+    </head>
+    <body>
+        <h3>PK Record</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <p>Inviter: <a href="/user/${pkdata[id].inviter}">${getUserdataById(pkdata[id].inviter).name}</a> (${pkdata[id].records.inviter.length} record(s))</p>
+        <p>Participant: <a href="/user/${pkdata[id].participant}">${getUserdataById(pkdata[id].participant).name}</a> (${pkdata[id].records.participant.length} record(s))</p>
+        <p>Winner: <a href="/user/${pkdata[id].winner}">${getUserdataById(pkdata[id].winner).name}</a></p>
+        <p>Rule: ${pkdata[id].rule}</p>
+        <p>Code: ${pkdata[id].code}</p>
+        <p>Start at ${new Date(pkdata[id].startTime).toLocaleString()}</p>
+        <h4>Rule Describe</h4>
+        ${getRuleDescribe(pkdata[id].rule)}
+        <h4><a href="/user/${pkdata[id].inviter}">${getUserdataById(pkdata[id].inviter).name}</a>'s Records</h4>
+        ${inviterrecords}
+        <h4><a href="/user/${pkdata[id].participant}">${getUserdataById(pkdata[id].participant).name}</a>'s Records</h4>
+        ${participantrecords}
+    </body>
+</html>
+            `);
         }
     }
 });

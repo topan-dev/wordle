@@ -39,9 +39,9 @@ function setCookie(name,value,daysToLive){
 }
 $(document).ready(function(){
     if(getCookie("logined")=="true"){
-        document.getElementById('user-tip').innerHTML=`Hello, <a href="/user/`+getCookie("loginid")+`">`
-            +getCookie("loginname")+`</a> (#`+getCookie("loginid")
-            +`)! <button id="user-logout">Log out</button><button id="user-settings">Settings</button>`;
+        document.getElementById('user-tip').innerHTML=`Hello, <a href="/i">
+            ${getCookie("loginname")}</a> (#${getCookie("loginid")}
+            )! <button id="user-logout">Log out</button><button id="user-settings">Settings</button>`;
         document.getElementById("user-logout").onclick=
             function(){
                 setCookie("logined","",0);
