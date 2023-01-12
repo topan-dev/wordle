@@ -37,6 +37,10 @@ var pkcodes;
 fs.readFile("datas/pkcode.json",'utf8',(err,data)=>{
     pkcodes=JSON.parse(data).codes;
 });
+var chat;
+fs.readFile("datas/chat.json",'utf8',(err,data)=>{
+    chat=JSON.parse(data);
+});
 
 function getUserdataById(id){
     var i=0;
@@ -289,7 +293,11 @@ app.all('*',(req,res,next)=>{
     res.set('Access-Control-Allow-Methods','GET');
     res.set('Access-Control-Allow-Headers','X-Requested-With, Content-Type');
     if ('OPTIONS'==req.method)return res.send(200);
-    next();
+    if (checklogin(req) || req.url == '/' || req.url == '/login' || req.url == '/login/try' || !(req.url.split("/f/")[0])) {
+        next();
+    } else {
+        res.send("<h1>Not logged in.</h1>");
+    }
 });
 
 app.get('/f/*',(req,res)=>{
@@ -573,43 +581,214 @@ app.get('/chat',(req,res)=>{
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
         <style>
         </style>
+        <script>
+        $(document).ready(function(){
+            $("#enterGroup").click(function() {
+                window.location.href = "/chat/group/" + $("#input-group-id").val();
+            });
+            $("#enterPrivate").click(function() {
+                window.location.href = "/chat/private/" + $("#input-user-id").val();
+            });
+        });
+        </script>
     </head>
     <body>
         <h3>Chat</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <div style=""></div>
+        <div>
+            <p>单聊：</p>
+            <input placeholder="User id" id="input-user-id"></input><button id="enterPrivate">Enter</button>
+            <p>群聊：</p>
+            <input placeholder="Group id" id="input-group-id"></input><button id="enterGroup">Enter</button>
+        </div>
     </body>
 </html>
         `);
     }
 });
-
-app.get('/contests',(req,res)=>{
-    if(!checklogin(req))res.redirect('/login');
-    else{
-        var codes="";
-        for(var i=0;i<contests.length;i++){
-            codes+=`<p><button onclick="location.pathname='/contest/${i}/home';">${contests[i].title}</button
-            > By <a href="/user/${contests[i].author}">${getUserdataById(contests[i].author).name}</a
-            >, Start at ${new Date(contests[i].openTime).toLocaleString()}</p>`;
-        }
+app.all("/chat/private/*", (req, res, next) => {
+    req.fromuid = Number(getCookie("loginid",req.headers.cookie));
+    req.touid = Number(req.url.split("/chat/private/")[1].split("/")[0]);
+    req.fromuser = req.smalluid = getidofuser(req.fromuid);
+    req.touser = req.biguid = getidofuser(req.touid);
+    if (req.smalluid > req.biguid) {
+        var tmp = req.smalluid;
+        req.smalluid = req.biguid;
+        req.biguid = tmp;
+    }
+    next();
+})
+app.post("/chat/private/*/send", (req, res) => {
+    var content = req.body.content;
+    if (!chat.private[req.smalluid]) {
+        chat.private[req.smalluid] = [];
+    }
+    if (!chat.private[req.smalluid][req.biguid]) {
+        chat.private[req.smalluid][req.biguid] = {messages: []};
+    }
+    chat.private[req.smalluid][req.biguid].messages.push({uid: req.fromuid, content: content, username: userdata.users[req.fromuid].name, time: new Date().toLocaleString()});
+    fs.writeFile("datas/chat.json",JSON.stringify(chat), (err) => {});
+    res.status(200).json({status: 200});
+});
+app.get("/chat/private/*/get", (req, res) => {
+    if (!chat.private[req.smalluid]) {
+        chat.private[req.smalluid] = [];
+    }
+    if (!chat.private[req.smalluid][req.biguid]) {
+        chat.private[req.smalluid][req.biguid] = {messages: []};
+    }
+    res.send(chat.private[req.smalluid][req.biguid].messages.slice(req.query.renderedDatas,));
+});
+app.get("/chat/private/*", (req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">Chat</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <style></style>
+        <script>
+            $(document).ready(function(){
+                var dataRendered = [];
+                function renderData(message) {
+                    var nowhtml = $("#chat").html();
+                    nowhtml = nowhtml + \`<p><a href="/user/\${message.uid}">\${message.username}</a>: (\${message.time})\${message.content}</p>\`;
+                    $("#chat").html(nowhtml);
+                }
+                function getMessage() {
+                    $.ajax({
+                        method: "GET",
+                        url: location.href + "/get",
+                        data: {
+                            renderedDatas: dataRendered.length
+                        },
+                        async: false,
+                        error: function() {
+                            alert("Network error!");
+                        },
+                        success: function(data) {
+                            for (var messageid in data) {
+                                var message = data[messageid];
+                                dataRendered.push(message);
+                                renderData(message);
+                            }
+                        }
+                    });
+                    setTimeout(getMessage, 2000);
+                }
+                function sendMessage(content) {
+                    $.ajax({
+                        url: location.href + "/send",
+                        method: "POST",
+                        data: {
+                            content: content
+                        }
+                    })
+                }
+                $("#send").click(function() {
+                    sendMessage($("#message").val());
+                });
+                getMessage();
+            });
+        </script>
+    </head>
+    <body>
+        <h3>Chat</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <h2>对 ${userdata.users[req.touid].name} 私聊 </h2>
+        <div id="chat">
+        </div>
+        <input placeholder="Type your message" id="message"></input>
+        <button id="send">Send</button>
+    </body>
+</html>
+    `);
+});
+app.post("/chat/group/*/send", (req, res) => {
+    var userid = Number(getCookie("loginid",req.headers.cookie));
+    var content = req.body.content;
+    var groupid = Number(req.url.split("/chat/group/")[1].split("/send")[0]);
+    chat.groups[groupid].messages.push({uid: userid, content: content, username: userdata.users[userid].name, time: new Date().toLocaleString()});
+    fs.writeFile("datas/chat.json",JSON.stringify(chat), (err) => {});
+    res.status(200).json({status: 200});
+});
+app.get("/chat/group/*/get", (req, res) => {
+    var groupid = Number(req.url.split("/chat/group/")[1].split("/get")[0]);
+    res.send(chat.groups[groupid].messages.slice(req.query.renderedDatas,));
+});
+app.get("/chat/group/*", (req, res) => {
+    var user = getCookie("loginid",req.headers.cookie);
+    var groupid = Number(req.url.split("/chat/group/")[1]);
+    var group = chat.groups[groupid];
+    if ((group.members !== "allusers") && (!(user in group.members))) {
+        res.send("<h2>You are not in this group.</h2>");
+    } else {
         res.send(`
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width">
-        <title id="title">Contest List</title>
+        <title id="title">Chat</title>
         <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
-        <style>
-        </style>
+        <style></style>
+        <script>
+            $(document).ready(function(){
+                var dataRendered = [];
+                function renderData(message) {
+                    var nowhtml = $("#chat").html();
+                    nowhtml = nowhtml + \`<p><a href="/user/\${message.uid}">\${message.username}</a>: (\${message.time})\${message.content}</p>\`;
+                    $("#chat").html(nowhtml);
+                }
+                function getMessage() {
+                    $.ajax({
+                        method: "GET",
+                        url: location.href + "/get",
+                        data: {
+                            renderedDatas: dataRendered.length
+                        },
+                        async: false,
+                        error: function() {
+                            alert("Network error!");
+                        },
+                        success: function(data) {
+                            for (var messageid in data) {
+                                var message = data[messageid];
+                                dataRendered.push(message);
+                                renderData(message);
+                            }
+                        }
+                    });
+                    setTimeout(getMessage, 2000);
+                }
+                function sendMessage(content) {
+                    $.ajax({
+                        url: location.href + "/send",
+                        method: "POST",
+                        data: {
+                            content: content
+                        }
+                    })
+                }
+                $("#send").click(function() {
+                    sendMessage($("#message").val());
+                });
+                getMessage();
+            });
+        </script>
     </head>
     <body>
-        <h3>Contest List</h3>
+        <h3>Chat</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p>Total: ${contests.length}</p>
-        ${codes}
+        <h2>群聊 ${group.name}</h2>
+        <div id="chat">
+        </div>
+        <input placeholder="Type your message" id="message"></input>
+        <button id="send">Send</button>
     </body>
 </html>
         `);
