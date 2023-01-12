@@ -219,7 +219,11 @@ function checkpkfinish(id,code){
         var participantfinished=pkcodes[id].records.participant;
         participantfinished=participantfinished[participantfinished.length-1]==pkcodes[id].answer;
         if(inviterfinished&&participantfinished){
-            if(pkcodes[id].status.lastsubmit.inviter<pkcodes[id].status.lastsubmit.participant)
+            if(pkcodes[id].records.inviter.length<pkcodes[id].records.participant.length)
+                transferpkdata(id,code,pkcodes[id].inviter);
+            else if(pkcodes[id].records.inviter.length>pkcodes[id].records.participant.length)
+                transferpkdata(id,code,pkcodes[id].participant);
+            else if(pkcodes[id].status.lastsubmit.inviter<pkcodes[id].status.lastsubmit.participant)
                 transferpkdata(id,code,pkcodes[id].inviter);
             else if(pkcodes[id].status.lastsubmit.inviter>pkcodes[id].status.lastsubmit.participant)
                 transferpkdata(id,code,pkcodes[id].participant);
@@ -1178,9 +1182,9 @@ app.get('/pk/*/view',(req,res)=>{
         <p>Inviter: <a href="/user/${pkdata[id].inviter}">${getUserdataById(pkdata[id].inviter).name}</a> (${pkdata[id].records.inviter.length} record(s))</p>
         <p>Participant: <a href="/user/${pkdata[id].participant}">${getUserdataById(pkdata[id].participant).name}</a> (${pkdata[id].records.participant.length} record(s))</p>
         <p>Winner: <a href="/user/${pkdata[id].winner}">${getUserdataById(pkdata[id].winner).name}</a></p>
-        <p>Rule: ${pkdata[id].rule}</p>
         <p>Code: ${pkdata[id].code}</p>
         <p>Start at ${new Date(pkdata[id].startTime).toLocaleString()}</p>
+        <p>Rule: ${pkdata[id].rule}</p>
         <h4>Rule Describe</h4>
         ${getRuleDescribe(pkdata[id].rule)}
         <h4><a href="/user/${pkdata[id].inviter}">${getUserdataById(pkdata[id].inviter).name}</a>'s Records</h4>
