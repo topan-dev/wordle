@@ -1,0 +1,82 @@
+.hashui-titlebar {
+	/*position: fixed;*/
+	background: #EEE;
+	width: 100%;
+	height: 35px;
+	padding: 8px;
+	border: 0px;
+	margin: 0px;
+	font-family: 'Consolas', '黑体';
+	font-size: 24px;
+	box-shadow: 0px 0px 5px;
+}
+.hashui-textbox {
+	background: #EEE;
+	left: 0; right: 0; margin: auto;
+	width: 80%;
+	border: 1px solid #000;
+	border-radius: 5px;
+	padding: 5px 30px;
+	font-family: 'Consolas', '楷体';
+	padding-left: 10px; padding-right: 10px;
+}
+.hashui-textbox-large {
+	text-align: left;
+	padding: 5px;
+	background: #EEE;
+	left: 0; right: 0; margin: auto;
+	width: 100%;
+	border: 1px solid #000;
+	border-radius: 5px;
+	font-family: 'Consolas', '楷体';
+}
+.hashui-lable {
+	border: 1px solid #000;
+	border-radius: 5px 5px 0px 0px;
+}
+.topan-tab{
+    width: 100%;
+	left: 0; right: 0;
+	border-width: 2px;
+}
+.topan-tab *{
+    margin: 0px; padding: 0px;
+    /*transition-duration: 0.15s;*/
+}
+.topan-tab>ul{
+    height: 21px;
+}
+.topan-tab>ul>li{
+	font-family: 'Consolas', '楷体';
+    float: left;
+    padding-left: 15px;
+    padding-right: 15px;
+    list-style: none;
+    box-sizing: border-box;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 5px 5px 0px 0px;
+    border: 1px solid #000;
+
+}
+.topan-tab>ul>li:hover{
+	background-color: #DDD;
+}
+.topan-tab>ul>li.topan-tab-showed{
+
+}
+.topan-tab>ul>li.topan-tab-showed:hover{
+
+}
+.topan-tab>div{
+	padding: 0px;
+    display: none;
+    width: auto;
+}
+.topan-tab div.topan-tab-showed{
+    display: block;
+}
+body {
+	margin: 0px;
+	background: #E8E8E8;
+}
