@@ -1186,10 +1186,10 @@ app.get('/contest/*/ranking',(req,res)=>{
 app.get("/contests/new", (req, res) => {
     var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
     if (!getUserdataById(userid).admin) {
-        res.send("<h1>Permission denied.</h1>");
+        res.redirect("/contests");
         return;
     }
-    res.send(makebytemplate("New Contest", "", null, getusername(req), `
+    res.send(makebytemplate("New Contest", "", "contest", getusername(req), `
 <h2>New Contest - this page can only be visited by admins.</h2>
 <form method="POST" action="/contests/new/create">
 <p>Title: <input type="text" name="title">
@@ -1231,50 +1231,49 @@ app.get("/contest/*/configure", (req, res) => {
     for (var i in contest.tasks) {
         answers += `<li><select value="${contest.tasks[i].rule}">${codes}</select> <input type="text" value="${contest.tasks[i].answer}"> <button class="remove">Remove</button></li>`
     }
-    if (!getUserdataById(userid).admin) {
-        res.send({status: 200, error: "Permission denied"});
-        return;
-    } else if (!contests[contestid]) {
+    if (!contests[contestid]) {
         res.send("No Contests here");
         return;
+    } else if (getidofuser(contests[contestid].author)!=userid) {
+        res.send({status: 200, error: "Permission denied"});
+        return;
     }
-    res.send(makebytemplate("Configure Contest", `
+    else res.send(makebytemplate("Configure Contest", `
 <script>
-$(document).ready(function() {
-    function addAnswer(answer) {
-        $("#tasks").append(\`<li><select>${codes}</select> <input type="text" value="\${answer}"> <button class="remove">Remove</button></li>\`)
-    }
-    $("#addtask").click(function() {
-        addAnswer("");
-        $(".remove").click(function() {
-            $(this).parent().remove();
+    $(document).ready(function() {
+        function addAnswer(answer) {
+            $("#tasks").append(\`<li><select>${codes}</select> <input type="text" value="\${answer}"> <button class="remove">Remove</button></li>\`)
+        }
+        $("#addtask").click(function() {
+            addAnswer("");
+            $(".remove").click(function() {
+                $(this).parent().remove();
+            });
         });
-    });
-    $("#submit").click(function() {
-        var submitData = [];
-        $("#tasks").children().each(function() {
-            submitData.push({rule: $($(this).children()[0]).find("option:selected").text(), answer: $($(this).children()[1]).val()});
-        });
-        console.log(submitData);
-        $.ajax({
-            url: "${req.url}/submit",
-            method: "POST",
-            data: {data: JSON.stringify(submitData)},
-            traditional: true,
-            success: (data, err) => {
-                console.log(data);
-                if (data.error) {
-                    alert(data.error);
-                } else if (data.redirect) {
-                    location.href = data.redirect;
+        $("#submit").click(function() {
+            var submitData = [];
+            $("#tasks").children().each(function() {
+                submitData.push({rule: $($(this).children()[0]).find("option:selected").text(), answer: $($(this).children()[1]).val()});
+            });
+            console.log(submitData);
+            $.ajax({
+                url: "${req.url}/submit",
+                method: "POST",
+                data: {data: JSON.stringify(submitData)},
+                traditional: true,
+                success: (data, err) => {
+                    console.log(data);
+                    if (data.error) {
+                        alert(data.error);
+                    } else if (data.redirect) {
+                        location.href = data.redirect;
+                    }
                 }
-            }
+            });
         });
     });
-});
 </script>
     `, null, getusername(req), `
-<h2>Configure Contest ${contests[contestid].title}</h2>
 <button id="addtask">Add</button>
 <ul id="tasks">${answers}</ul>
 <button id="submit">Submit</button>
@@ -1284,11 +1283,11 @@ app.post("/contest/*/configure/submit", (req, res) => {
     var data = JSON.parse(req.body.data);
     var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
     var contestid = Number(req.url.split("/contest/")[1].split("/configure")[0]);
-    if (!getUserdataById(userid).admin) {
-        res.send({status: 200, error: "Permission denied"});
+    if (!contests[contestid]) {
+        res.send("No Contests here");
         return;
-    } else if (!contests[contestid]) {
-        res.send({error: "No Contests here"});
+    } else if (getidofuser(contests[contestid].author)!=userid) {
+        res.send({status: 200, error: "Permission denied"});
         return;
     }
     for (var i in data) {
