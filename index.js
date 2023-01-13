@@ -53,7 +53,6 @@ function makebytemplate(title,head,showed,username,data){
         <script src="/f/TopanUI/src/jquery.js"></script>
         <link rel="stylesheet" href="/f/TopanUI/topan.css">
         <script src="/f/TopanUI/topan.js"></script>
-        <link rel="stylesheet" href="/f/style.css">
         <script>
             function setCookie(name,value,daysToLive){
                 var cookie=name+"="+encodeURIComponent(value)+"; path=/";
@@ -331,27 +330,13 @@ function newpkcode(){
         if(!flag)return code;
     }
 }
-function transferpkdata(id,code,res,timeout){
+function transferpkdata(id,code,res){
     if(id>=pkcodes.length||pkcodes[id].code!=code)return;
     var temp=pkcodes[id]; temp.winner=res;
     delete temp.started; delete temp.status;
     pkcodes.splice(id,1); pkdata.push(temp);
     userdata.users[getidofuser(temp.inviter)].data.pk.history.push(pkdata.length-1);
     userdata.users[getidofuser(temp.participant)].data.pk.history.push(pkdata.length-1);
-    if(timeout){
-        if(res!=temp.inviter)
-            userdata.users[getidofuser(temp.inviter)].data.score.credit-=20;
-        if(res!=temp.participant)
-            userdata.users[getidofuser(temp.participant)].data.score.credit-=20;
-    }
-    else{
-        userdata.users[getidofuser(temp.inviter)].data.score.credit+=1;
-        userdata.users[getidofuser(temp.participant)].data.score.credit+=1;
-        if(res!=temp.inviter)userdata.users[getidofuser(temp.participant)].data.score.pk*=1.07;
-        else userdata.users[getidofuser(temp.participant)].data.score.pk*=0.95;
-        if(res!=temp.participant)userdata.users[getidofuser(temp.inviter)].data.score.pk*=1.11;
-        else userdata.users[getidofuser(temp.inviter)].data.score.pk*=0.92;
-    }
     fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
     fs.writeFile("datas/pk.json",JSON.stringify({datas:pkdata}),(err)=>{});
     fs.writeFile("datas/users.json",JSON.stringify(userdata),(err)=>{});
@@ -365,34 +350,28 @@ function checkpkfinish(id,code){
         participantfinished=participantfinished[participantfinished.length-1]==pkcodes[id].answer;
         if(inviterfinished&&participantfinished){
             if(pkcodes[id].records.inviter.length<pkcodes[id].records.participant.length)
-                transferpkdata(id,code,pkcodes[id].inviter,false);
+                transferpkdata(id,code,pkcodes[id].inviter);
             else if(pkcodes[id].records.inviter.length>pkcodes[id].records.participant.length)
-                transferpkdata(id,code,pkcodes[id].participant,false);
+                transferpkdata(id,code,pkcodes[id].participant);
             else if(pkcodes[id].status.lastsubmit.inviter<pkcodes[id].status.lastsubmit.participant)
-                transferpkdata(id,code,pkcodes[id].inviter,false);
+                transferpkdata(id,code,pkcodes[id].inviter);
             else if(pkcodes[id].status.lastsubmit.inviter>pkcodes[id].status.lastsubmit.participant)
-                transferpkdata(id,code,pkcodes[id].participant,false);
-            else transferpkdata(id,code,0,false);
+                transferpkdata(id,code,pkcodes[id].participant);
+            else transferpkdata(id,code,null);
             return true;
         }
         else if(inviterfinished){
-            if(pkcodes[id].records.participant.length>=pkcodes[id].records.inviter.length-1){
-                transferpkdata(id,code,pkcodes[id].inviter,false);
-                return true;
-            }
-            else if(pkcodes[id].status.timeout.participant<=new Date().getTime()){
-                transferpkdata(id,code,pkcodes[id].inviter,true);
+            if(pkcodes[id].records.participant.length>=pkcodes[id].records.inviter.length
+                ||pkcodes[id].status.timeout.participant<=new Date().getTime()){
+                transferpkdata(id,code,pkcodes[id].inviter);
                 return true;
             }
             else return false;
         }
         else if(participantfinished){
-            if(pkcodes[id].records.inviter.length>=pkcodes[id].records.participant.length-1){
-                transferpkdata(id,code,pkcodes[id].participant,false);
-                return true;
-            }
-            else if(pkcodes[id].status.timeout.inviter<=new Date().getTime()){
-                transferpkdata(id,code,pkcodes[id].participant,true);
+            if(pkcodes[id].records.inviter.length>=pkcodes[id].records.participant.length
+                ||pkcodes[id].status.timeout.inviter<=new Date().getTime()){
+                transferpkdata(id,code,pkcodes[id].participant);
                 return true;
             }
             else return false;
@@ -402,18 +381,18 @@ function checkpkfinish(id,code){
             var participanttimeouted=pkcodes[id].status.timeout.participant<=new Date().getTime();
             if(invitertimeouted&&participanttimeouted){
                 if(pkcodes[id].status.timeout.inviter<pkcodes[id].status.timeout.participant)
-                    transferpkdata(id,code,pkcodes[id].participant,true);
+                    transferpkdata(id,code,pkcodes[id].participant);
                 else if(pkcodes[id].status.timeout.inviter>pkcodes[id].status.timeout.participant)
-                    transferpkdata(id,code,pkcodes[id].inviter,true);
-                else transferpkdata(id,code,0,true);
+                    transferpkdata(id,code,pkcodes[id].inviter);
+                else transferpkdata(id,code,null);
                 return true;
             }
             else if(invitertimeouted){
-                transferpkdata(id,code,pkcodes[id].participant,true);
+                transferpkdata(id,code,pkcodes[id].participant);
                 return true;
             }
             else if(participanttimeouted){
-                transferpkdata(id,code,pkcodes[id].inviter,true);
+                transferpkdata(id,code,pkcodes[id].inviter);
                 return true;
             }
             else return false;
@@ -436,7 +415,7 @@ app.all('*',(req,res,next)=>{
         pklastfix=new Date().getTime();
     }
     if(!req.get('Origin')){
-        if (checklogin(req) || req.url == '/' || req.url == '/ranking' || req.url == '/login' || req.url == '/login/try' || !(req.url.split("/f/")[0])) {
+        if (checklogin(req) || req.url == '/' || req.url == '/login' || req.url == '/login/try' || !(req.url.split("/f/")[0])) {
             return next();
         } else {
             res.redirect('/login');
@@ -478,6 +457,33 @@ app.get('/',(req,res)=>{
     <p><strong>我们欢迎您向我们提供新规则。</strong></p>
 </div>
     `));
+    return;
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">Home</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <style>
+        </style>
+    </head>
+    <body>
+        <h3>Home</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <button onclick="location.pathname='/chat';">Chat</button>
+        <button onclick="location.pathname='/ranking';">Ranking</button>
+        <button onclick="location.pathname='/contests';">Contests</button>
+        <button onclick="location.pathname='/pk';">1v1 PK</button>
+        <button onclick="location.pathname='/answer';">Answer Query</button>
+        <button onclick="location.pathname='/f/words.json';">Download List</button>
+        <h3>Rules Describe</h3>
+        ${rulesdescribe}
+    </body>
+</html>
+    `);
 });
 
 app.get('/saber',(req,res)=>{
@@ -594,51 +600,36 @@ app.get('/user/*',(req,res)=>{
         var usrdata2=usrdata.data.pk.history;
         var pkrecords="<table border='1'><tr><th>ID</th><th>Code</th><th>Inviter</th><th>Participant</th><th>Winner</th><th>Answer</th><th>Rule</th><th>Time</th></tr>";
         for(var j=usrdata2.length-1;j>=0;j--)
-            pkrecords+=`
-<tr>
-    <td><a href="/pk/${usrdata2[j]}/view">${usrdata2[j]}</a></td>
-    <td>${pkdata[usrdata2[j]].code}</td>
-    <td><a href="/user/${pkdata[usrdata2[j]].inviter}">${getUserdataById(pkdata[usrdata2[j]].inviter).name}</td>
-    <td><a href="/user/${pkdata[usrdata2[j]].participant}">${getUserdataById(pkdata[usrdata2[j]].participant).name}</td>
-    <td><a href="/user/${pkdata[usrdata2[j]].winner}">${getUserdataById(pkdata[usrdata2[j]].winner).name}</td>
-    <td>${pkdata[usrdata2[j]].answer}</td>
-    <td>${pkdata[usrdata2[j]].rule}</td>
-    <td>${new Date(pkdata[usrdata2[j]].startTime).toLocaleString()}</td>
-</tr>
-            `;
+            pkrecords+=`<tr><th><a href="/pk/${usrdata2[j]}/view">${usrdata2[j]}</a></th><th>${pkdata[usrdata2[j]].code}</th>
+                <th><a href="/user/${pkdata[usrdata2[j]].inviter}">${getUserdataById(pkdata[usrdata2[j]].inviter).name}</th>
+                <th><a href="/user/${pkdata[usrdata2[j]].participant}">${getUserdataById(pkdata[usrdata2[j]].participant).name}</th>
+                <th><a href="/user/${pkdata[usrdata2[j]].winner}">${getUserdataById(pkdata[usrdata2[j]].winner).name}</th>
+                <th>${pkdata[usrdata2[j]].answer}</th><th>${pkdata[usrdata2[j]].rule}</th>
+                <th>${new Date(pkdata[usrdata2[j]].startTime).toLocaleString()}</th></tr>`;
         pkrecords+=`</table>`;
-        res.send(makebytemplate(`${usrdata.name}'s Home`,``,null,getusername(req),`
-<div class="row">
-    <div class="column-one-fifth">
-        <div style="padding-right: 8px;">
-            <div class="topan-section-shadow">
-                <p>Username: ${usrdata.name}</p>
-                <p>User ID: ${usrdata.id}</p>
-                <p>Privilege Level: ${usrdata.admin?'Admin':'Ordinary'}</p>
-                <p>Sum Score: ${parseInt(usrdata.data.score.credit+usrdata.data.score.contest+usrdata.data.score.pk)}</p>
-                <p>Credit: ${parseInt(usrdata.data.score.credit)}</p>
-                <p>Contest: ${parseInt(usrdata.data.score.contest)}</p>
-                <p>PK: ${parseInt(usrdata.data.score.pk)}</p>
-            </div>
-        </div>
-    </div>
-    <div class="column-four-fifth">
-        <div style="padding-left: 8px;">
-            <div class="topan-section-shadow">
-                <div class='topan-tab'>
-                    <ul>
-                        <li class='topan-tab-showed'>PK Records</li>
-                    </ul>
-                    <div class='topan-tab-showed'>
-                        ${pkrecords}
-                    </div>
-                </div>
-                <p></p>
-            </div>
-        </div>
-    </div>
-</div>
-        `));
+        res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">${usrdata.name}'s (#${usrdata.id}) Home</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <style>
+        </style>
+    </head>
+    <body>
+        <h3>${usrdata.name}'s (#${usrdata.id}) Home</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <p>Username: ${usrdata.name}</p>
+        <p>User ID: ${usrdata.id}</p>
+        <p>Privilege Level: ${usrdata.admin?'Admin':'Ordinary'}</p>
+        <h4>PK Records</h4>
+        ${pkrecords}
+    </body>
+</html>
+        `);
     }
 });
 app.get('/i',(req,res)=>{
@@ -1087,6 +1078,9 @@ app.post('/contest/*/task/*/submit',(req,res)=>{
         if(new Date().getTime()<contests[id].openTime){
             res.status(200).json({error:"The contest hasn't started yet."});
             return;
+        } else if (new Date().getTime() > contests[id].closeTime) {
+            res.status(200).json({error:"The contest is closed now."});
+            return;
         }
         var word=req.body.word;
         if(getrecords(Number(getCookie("loginid",req.headers.cookie)),id,taskid).solved)
@@ -1179,6 +1173,125 @@ app.get('/contest/*/ranking',(req,res)=>{
 </html>
         `);
     }
+});
+app.get("/contests/new", (req, res) => {
+    var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    if (!getUserdataById(userid).admin) {
+        res.send("<h1>Permission denied.</h1>");
+        return;
+    }
+    res.send(makebytemplate("New Contest", "", null, getusername(req), `
+<h2>New Contest - this page can only be visited by admins.</h2>
+<form method="POST" action="/contests/new/create">
+<p>Title: <input type="text" name="title">
+<p>Begin time: <input type="date" name="begindate"><input type="time" name="begintime"></p>
+<p>End time: <input type="date" name="enddate"><input type="time" name="endtime"></p>
+<input type="submit" id="submit" value="Submit">
+</form>
+    `));
+});
+app.post("/contests/new/create", (req, res) => {
+    var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    var beginTime = new Date(req.body.begindate + " " + req.body.begintime).getTime();
+    var closeTime = new Date(req.body.enddate + " " + req.body.endtime).getTime();
+    var contestid = contests.length;
+    if (!getUserdataById(userid).admin) {
+        res.send({status: 200, error: "Permission denied"});
+        return;
+    }
+    contests.push({
+        title: req.body.title,
+        author: userid,
+        openTime: beginTime,
+        closeTime: closeTime,
+        tasks: [],
+        users: []
+    });
+    fs.writeFile("datas/contest.json", JSON.stringify({contests:contests}), (err) => {});
+    res.redirect("/contest/" + contestid + "/configure");
+});
+app.get("/contest/*/configure", (req, res) => {
+    var codes="";
+    for(var i=0;i<rules.length;i++) {
+        codes+=`<option value="`+i+`">`+rules[i].name+`</option>`;
+    }
+    var answers = "";
+    var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    var contestid = Number(req.url.split("/contest/")[1].split("/configure")[0]);
+    var contest = contests[contestid];
+    for (var i in contest.tasks) {
+        answers += `<li><select value="${contest.tasks[i].rule}">${codes}</select> <input type="text" value="${contest.tasks[i].answer}"> <button class="remove">Remove</button></li>`
+    }
+    if (!getUserdataById(userid).admin) {
+        res.send({status: 200, error: "Permission denied"});
+        return;
+    } else if (!contests[contestid]) {
+        res.send("No Contests here");
+        return;
+    }
+    res.send(makebytemplate("Configure Contest", `
+<script>
+$(document).ready(function() {
+    function addAnswer(answer) {
+        $("#tasks").append(\`<li><select>${codes}</select> <input type="text" value="\${answer}"> <button class="remove">Remove</button></li>\`)
+    }
+    $("#addtask").click(function() {
+        addAnswer("");
+        $(".remove").click(function() {
+            $(this).parent().remove();
+        });
+    });
+    $("#submit").click(function() {
+        var submitData = [];
+        $("#tasks").children().each(function() {
+            submitData.push({rule: $($(this).children()[0]).find("option:selected").text(), answer: $($(this).children()[1]).val()});
+        });
+        console.log(submitData);
+        $.ajax({
+            url: "${req.url}/submit",
+            method: "POST",
+            data: {data: JSON.stringify(submitData)},
+            traditional: true,
+            success: (data, err) => {
+                console.log(data);
+                if (data.error) {
+                    alert(data.error);
+                } else if (data.redirect) {
+                    location.href = data.redirect;
+                }
+            }
+        });
+    });
+});
+</script>
+    `, null, getusername(req), `
+<h2>Configure Contest ${contests[contestid].title}</h2>
+<button id="addtask">Add</button>
+<ul id="tasks">${answers}</ul>
+<button id="submit">Submit</button>
+    `))
+});
+app.post("/contest/*/configure/submit", (req, res) => {
+    var data = JSON.parse(req.body.data);
+    var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    var contestid = Number(req.url.split("/contest/")[1].split("/configure")[0]);
+    if (!getUserdataById(userid).admin) {
+        res.send({status: 200, error: "Permission denied"});
+        return;
+    } else if (!contests[contestid]) {
+        res.send({error: "No Contests here"});
+        return;
+    }
+    for (var i in data) {
+        var d = data[i];
+        if (!checkword(d.answer)) {
+            res.send({error: "One of this words are not a proper word."});
+            return;
+        }
+    }
+    contests[contestid].tasks = data;
+    fs.writeFile("datas/contest.json", JSON.stringify({contests:contests}), (err) => {});
+    res.send({redirect: "/contest/" + contestid + "/home"});
 });
 app.get('/pk',(req,res)=>{
     var codes="";
@@ -1302,164 +1415,135 @@ app.get('/pk/*/play',(req,res)=>{
             res.redirect('/pk'); return;
         }
         fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
-        var recs=pkcodes[i].records.inviter;
-        var recordcode=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
+        var recs;
+        if(pkcodes[i].inviter==uid) recs=pkcodes[i].records.inviter;
+        else                        recs=pkcodes[i].records.participant;
+        var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
         for(var j=recs.length-1;j>=0;j--)
-            recordcode+=`
-<tr>
-    <td>${j+1}</td>
-    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].participant)}</td>
-</tr>
-            `;
+            recordcode+=`<tr><th>${j+1}</th>
+                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,false)}</th></tr>`;
         recordcode+=`</table>`;
-        recs=pkcodes[i].records.participant;
-        var recordcode2=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
+        if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
+        else                        recs=pkcodes[i].records.participant;
+        var recordcode2="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
         for(var j=recs.length-1;j>=0;j--)
-            recordcode2+=`
-<tr>
-    <td>${j+1}</td>
-    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].inviter)}</td>
-</tr>
-            `;
+            recordcode2+=`<tr><th>${j+1}</th>
+                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
         recordcode2+=`</table>`;
-        res.send(makebytemplate("1v1 PK arena",`
-<script>
-    var timeout,starttime;
-    $(document).ready(()=>{
-        $.post("/pk/status",{code:"${pkid}"},
-            (data,status)=>{
-                $("#recordstotal-inviter")[0].innerText=data.total.inviter;
-                $("#recordstotal-participant")[0].innerText=data.total.participant;
-                starttime=data.startTime;
-                timeout=data.timeout;
-                setInterval(()=>{
-                    if($("#submitblock").hasClass("hide")){
-                        if(new Date().getTime()>=starttime)
-                            $("#gamestart").addClass("hide"),
-                            $("#submitblock").removeClass("hide");
-                        else{
-                            var temp=parseInt((starttime-new Date().getTime())/1000);
-                            $("#starttime")[0].innerText=temp+" s";
-                        }
+        res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">1v1 PK arena</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var timeout,starttime;
+            $(document).ready(()=>{
+                $.post("/pk/status",{code:"${pkid}"},
+                    (data,status)=>{
+                        $("#recordstotal-inviter")[0].innerText=data.total.inviter;
+                        $("#recordstotal-participant")[0].innerText=data.total.participant;
+                        $("#lastsubmittime-inviter")[0].innerText=new Date(data.lastsubmit.inviter).toLocaleString();
+                        $("#lastsubmittime-participant")[0].innerText=new Date(data.lastsubmit.participant).toLocaleString();
+                        starttime=data.startTime;
+                        timeout=data.timeout;
+                        setInterval(()=>{
+                            if($("#gamestart").length>0){
+                                if(new Date().getTime()>=starttime)
+                                    $("#gamestart").remove();
+                                else{
+                                    var temp=parseInt((starttime-new Date().getTime())/1000);
+                                    $("#starttime")[0].innerText=temp+" s";
+                                }
+                            }
+                            var temp2=parseInt((timeout-new Date().getTime())/1000);
+                            $("#submittimelimit")[0].innerText=temp2+" s";
+                        },500);
                     }
-                    var temp2=parseInt((timeout.inviter-new Date().getTime())/1000);
-                    $("#timeremaining-inviter")[0].innerText=temp2+" s";
-                    temp2=parseInt((timeout.participant-new Date().getTime())/1000);
-                    $("#timeremaining-participant")[0].innerText=temp2+" s";
-                },500);
-            }
-        );
-        setInterval(()=>{
-            $.post("/pk/status",{code:"${pkid}"},
-                (data,status)=>{
-                    if(data.direct!="")location.pathname=data.direct;
-                    $("#recordstotal-inviter")[0].innerText=data.total.inviter;
-                    $("#recordstotal-participant")[0].innerText=data.total.participant;
-                    starttime=data.startTime;
-                    timeout=data.timeout;
-                    $("#recordcode").html(data.records);
-                    $("#recordcode2").html(data.records2);
-                }
-            );
-        },3000);
-        $(document).ready(()=>{
-            $('#submit').click(()=>{
-                if($("#gamestart").hasClass("hide"))
-                    $.post("/pk/${pkid}/submit",
-                        {word: $('#submit-answer')[0].value},
+                );
+                setInterval(()=>{
+                    $.post("/pk/status",{code:"${pkid}"},
                         (data,status)=>{
-                            if(data.error!=undefined)alert(data.error);
+                            $("#recordstotal-inviter")[0].innerText=data.total.inviter;
+                            $("#recordstotal-participant")[0].innerText=data.total.participant;
+                            $("#lastsubmittime-inviter")[0].innerText=new Date(data.lastsubmit.inviter).toLocaleString();
+                            $("#lastsubmittime-participant")[0].innerText=new Date(data.lastsubmit.participant).toLocaleString();
+                            starttime=data.startTime;
+                            timeout=data.timeout;
+                            $("#records2").html(data.records);
                         }
-                    ),
-                    $('#submit-answer').val("");
+                    );
+                },3000);
+                $(document).ready(()=>{
+                    $('#submit').click(()=>{
+                        if($("#gamestart").length==0)
+                            $.post("/pk/${pkid}/submit",
+                                {word: $('#submit-answer')[0].value},
+                                (data,status)=>{
+                                    if(data.error!=undefined)alert(data.error);
+                                    else location.href="";
+                                }
+                            );
+                    });
+                });
             });
-        });
-    });
-</script>
-        `,"/pk",getusername(req),`
-<div class="row">
-    <div class="column-one-thirth">
-        <div style="padding-right: 12px;">
-            <div class="topan-section-shadow">
-                <p style="text-align: center;"><a href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}</a>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> <span id="recordstotal-inviter">0</span>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-clock"></i> <span id="timeremaining-inviter"></span></p>
-                <div id="recordcode">${recordcode}</div>
-                <p></p>
-            </div>
-        </div>
-    </div>
-    <div class="column-one-thirth">
-        <div style="padding-left: 12px; padding-right: 12px;">
-            <div id="gamestart">
-                <div class="topan-section-shadow">
-                    <p style="text-align: center;">Start after <i class="fa fa-solid fa-clock"></i> <span id="starttime"></span></p>
-                </div>
-            </div>
-            <div id="submitblock" class="hide">
-                <div class="topan-section-shadow">
-                    <h4>Submit</h4>
-                    <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="column-one-thirth">
-        <div style="padding-left: 12px;">
-            <div class="topan-section-shadow">
-                <p style="text-align: center;"><a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> <span id="recordstotal-participant">0</span>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-clock"></i> <span id="timeremaining-participant"></span></p>
-                <div id="recordcode2">${recordcode2}</div>
-                <p></p>
-            </div>
-        </div>
-    </div>
-</div>
-<br>
-<div class="topan-section-shadow">
-    <h4>${pkcodes[i].rule}</h4>
-    ${getRuleDescribeHTML(pkcodes[i].rule)}
-    <p></p>
-</div>
-        `));
+        </script>
+    </head>
+    <body>
+        <h3>1v1 PK arena</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <p><span id="recordstotal-inviter">0</span> <a
+        href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}
+        </a> VS <a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a> <span
+        id="recordstotal-participant">0</span></p>
+        <p><a href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}</a>'s last submission time: <span id="lastsubmittime-inviter"></span></p>
+        <p><a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a>'s last submission time: <span id="lastsubmittime-participant"></span></p>
+        <p>Checker: ${pkcodes[i].rule}</p>
+        <h4>Rule Describe</h4>
+        ${getRuleDescribeHTML(pkcodes[i].rule)}
+        <p id="gamestart"><strong>Game will start after <span id="starttime"></span></strong></p>
+        <h4>Submit (Please submit within <span id="submittimelimit"></span>)</h4>
+        <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
+        <h4>Records</h4>
+        ${recordcode}
+        <h4>Records submitted by the other party</h4>
+        <div id="records2">${recordcode2}</div>
+    </body>
+</html>
+        `);
     }
 });
 app.post('/pk/status',(req,res)=>{
     var uid=Number(getCookie("loginid",req.headers.cookie));
     var pkid=req.body.code,i=0;
     while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
-    if(i==pkcodes.length)res.status(200).json({direct: '/i'});
-    else if(checkpkfinish(i,pkid))res.status(200).json({direct: '/i'});
-    else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.status(200).json({direct: '/pk'});
+    if(i==pkcodes.length)res.redirect('/pk');
+    else if(checkpkfinish(i,pkid))res.redirect('/i');
+    else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.redirect('/pk');
     else if(pkcodes[i].started){
-        var recs=pkcodes[i].records.inviter;
-        var recordcode=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
+        var recs;
+        if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
+        else                        recs=pkcodes[i].records.participant;
+        var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
         for(var j=recs.length-1;j>=0;j--)
-            recordcode+=`
-<tr>
-    <td>${j+1}</td>
-    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].participant)}</td>
-</tr>
-            `;
+            recordcode+=`<tr><th>${j+1}</th>
+                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
         recordcode+=`</table>`;
-        recs=pkcodes[i].records.participant;
-        var recordcode2=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
-        for(var j=recs.length-1;j>=0;j--)
-            recordcode2+=`
-<tr>
-    <td>${j+1}</td>
-    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].inviter)}</td>
-</tr>
-            `;
-        recordcode2+=`</table>`;
         res.status(200).json({
-            direct: "",
             started: true,
             total: {
                 inviter: pkcodes[i].records.inviter.length,
                 participant: pkcodes[i].records.participant.length
             },
+            lastsubmit: pkcodes[i].status.lastsubmit,
             startTime: pkcodes[i].startTime,
-            timeout: pkcodes[i].status.timeout,
-            records: recordcode,
-            records2: recordcode2
+            timeout: uid==pkcodes[i].inviter
+                        ?pkcodes[i].status.timeout.inviter
+                        :pkcodes[i].status.timeout.participant,
+            records: recordcode
         });
     }
     else res.status(200).json({started:false});
@@ -1578,35 +1662,25 @@ app.get('/pk/*/view',(req,res)=>{
 });
 
 app.get('/ranking',(req,res)=>{
-    var temp=userdata.users;
-    temp=temp.sort((x,y)=>{
-        var sumx=x.data.score.credit+x.data.score.contest+x.data.score.pk;
-        var sumy=y.data.score.credit+y.data.score.contest+y.data.score.pk;
-        if(sumx!=sumy)return sumy-sumx;
-        if(x.data.score.credit!=y.data.score.credit)return y.data.score.credit-x.data.score.credit;
-        return x.id-y.id;
-    });
-    var rankhtml=`<table border='1' class="topan-table-center" style="background: white;"><tr><th>Ranking</th><th>User</th><th>Sum</th><th>Credit</th><th>Contest</th><th>PK</th></tr>`;
-    for(var i=0,rank=1;i<temp.length;i++){
-        if(temp[i].id<=0)continue;
-        var sum=temp[i].data.score.credit+temp[i].data.score.contest+temp[i].data.score.pk;
-        rankhtml+=`
-<tr>
-    <td>${rank}</td>
-    <td><a href="/user/${temp[i].id}">${temp[i].name}</a></td>
-    <td>${parseInt(sum)}</td>
-    <td>${parseInt(temp[i].data.score.credit)}</td>
-    <td>${parseInt(temp[i].data.score.contest)}</td>
-    <td>${parseInt(temp[i].data.score.pk)}</td>
-</tr>
-        `;
-        rank++;
-    }
-    fs.readFile("datas/users.json",'utf8',(err,data)=>{
-        userdata=JSON.parse(data);
-    });
-    rankhtml+=`</table>`;
-    res.send(makebytemplate("Ranking","","ranking",getusername(req),rankhtml));
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title id="title">Chat</title>
+        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
+        <style>
+        </style>
+    </head>
+    <body>
+        <h3>Chat</h3>
+        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
+        <div style=""></div>
+    </body>
+</html>
+    `);
 });
 
 app.get('/answer',(req,res)=>{
