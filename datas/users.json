@@ -7,8 +7,9 @@
             "admin": true,
             "data": {
                 "score": {
-                    "contest": 0,
-                    "pk": 0
+                    "credit": 100,
+                    "contest": 100,
+                    "pk": 100
                 },
                 "pk": {
                     "coolingEndTime": 946656000000,
