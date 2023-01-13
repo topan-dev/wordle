@@ -53,6 +53,7 @@ function makebytemplate(title,head,showed,username,data){
         <script src="/f/TopanUI/src/jquery.js"></script>
         <link rel="stylesheet" href="/f/TopanUI/topan.css">
         <script src="/f/TopanUI/topan.js"></script>
+        <link rel="stylesheet" href="/f/style.css">
         <script>
             function setCookie(name,value,daysToLive){
                 var cookie=name+"="+encodeURIComponent(value)+"; path=/";
@@ -346,9 +347,9 @@ function transferpkdata(id,code,res,timeout){
     else{
         userdata.users[getidofuser(temp.inviter)].data.score.credit+=1;
         userdata.users[getidofuser(temp.participant)].data.score.credit+=1;
-        if(res!=temp.inviter)userdata.users[getidofuser(temp.participant)].data.score.pk*=1.05;
+        if(res!=temp.inviter)userdata.users[getidofuser(temp.participant)].data.score.pk*=1.07;
         else userdata.users[getidofuser(temp.participant)].data.score.pk*=0.95;
-        if(res!=temp.participant)userdata.users[getidofuser(temp.inviter)].data.score.pk*=1.08;
+        if(res!=temp.participant)userdata.users[getidofuser(temp.inviter)].data.score.pk*=1.11;
         else userdata.users[getidofuser(temp.inviter)].data.score.pk*=0.92;
     }
     fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
@@ -593,48 +594,35 @@ app.get('/user/*',(req,res)=>{
         var usrdata2=usrdata.data.pk.history;
         var pkrecords="<table border='1'><tr><th>ID</th><th>Code</th><th>Inviter</th><th>Participant</th><th>Winner</th><th>Answer</th><th>Rule</th><th>Time</th></tr>";
         for(var j=usrdata2.length-1;j>=0;j--)
-            pkrecords+=`<tr><td><a href="/pk/${usrdata2[j]}/view">${usrdata2[j]}</a></td><td>${pkdata[usrdata2[j]].code}</td>
-                <td><a href="/user/${pkdata[usrdata2[j]].inviter}">${getUserdataById(pkdata[usrdata2[j]].inviter).name}</td>
-                <td><a href="/user/${pkdata[usrdata2[j]].participant}">${getUserdataById(pkdata[usrdata2[j]].participant).name}</td>
-                <td><a href="/user/${pkdata[usrdata2[j]].winner}">${getUserdataById(pkdata[usrdata2[j]].winner).name}</td>
-                <td>${pkdata[usrdata2[j]].answer}</td><td>${pkdata[usrdata2[j]].rule}</td>
-                <td>${new Date(pkdata[usrdata2[j]].startTime).toLocaleString()}</td></tr>`;
+            pkrecords+=`
+<tr>
+    <td><a href="/pk/${usrdata2[j]}/view">${usrdata2[j]}</a></td>
+    <td>${pkdata[usrdata2[j]].code}</td>
+    <td><a href="/user/${pkdata[usrdata2[j]].inviter}">${getUserdataById(pkdata[usrdata2[j]].inviter).name}</td>
+    <td><a href="/user/${pkdata[usrdata2[j]].participant}">${getUserdataById(pkdata[usrdata2[j]].participant).name}</td>
+    <td><a href="/user/${pkdata[usrdata2[j]].winner}">${getUserdataById(pkdata[usrdata2[j]].winner).name}</td>
+    <td>${pkdata[usrdata2[j]].answer}</td>
+    <td>${pkdata[usrdata2[j]].rule}</td>
+    <td>${new Date(pkdata[usrdata2[j]].startTime).toLocaleString()}</td>
+</tr>
+            `;
         pkrecords+=`</table>`;
-        res.send(makebytemplate(`${usrdata.name}'s Home`,`
-<style>
-    .row:after{
-        clear: both;
-    }
-    .row:before,.row:after{
-        content: " ";
-        display: table;
-    }
-    .row{
-        margin: 0 auto;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    .user-left{
-        width: 20%;
-        float: left;
-    }
-    .user-right{
-        width: 80%;
-        float: right;
-    }
-</style>
-        `,null,getusername(req),`
+        res.send(makebytemplate(`${usrdata.name}'s Home`,``,null,getusername(req),`
 <div class="row">
-    <div class="user-left">
+    <div class="column-one-fifth">
         <div style="padding-right: 8px;">
             <div class="topan-section-shadow">
                 <p>Username: ${usrdata.name}</p>
                 <p>User ID: ${usrdata.id}</p>
                 <p>Privilege Level: ${usrdata.admin?'Admin':'Ordinary'}</p>
+                <p>Sum Score: ${parseInt(usrdata.data.score.credit+usrdata.data.score.contest+usrdata.data.score.pk)}</p>
+                <p>Credit: ${parseInt(usrdata.data.score.credit)}</p>
+                <p>Contest: ${parseInt(usrdata.data.score.contest)}</p>
+                <p>PK: ${parseInt(usrdata.data.score.pk)}</p>
             </div>
         </div>
     </div>
-    <div class="user-right">
+    <div class="column-four-fifth">
         <div style="padding-left: 8px;">
             <div class="topan-section-shadow">
                 <div class='topan-tab'>
@@ -1314,106 +1302,123 @@ app.get('/pk/*/play',(req,res)=>{
             res.redirect('/pk'); return;
         }
         fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
-        var recs;
-        if(pkcodes[i].inviter==uid) recs=pkcodes[i].records.inviter;
-        else                        recs=pkcodes[i].records.participant;
-        var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        var recs=pkcodes[i].records.inviter;
+        var recordcode=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
         for(var j=recs.length-1;j>=0;j--)
-            recordcode+=`<tr><th>${j+1}</th>
-                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,false)}</th></tr>`;
+            recordcode+=`
+<tr>
+    <td>${j+1}</td>
+    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].participant)}</td>
+</tr>
+            `;
         recordcode+=`</table>`;
-        if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
-        else                        recs=pkcodes[i].records.participant;
-        var recordcode2="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        recs=pkcodes[i].records.participant;
+        var recordcode2=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
         for(var j=recs.length-1;j>=0;j--)
-            recordcode2+=`<tr><th>${j+1}</th>
-                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
+            recordcode2+=`
+<tr>
+    <td>${j+1}</td>
+    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].inviter)}</td>
+</tr>
+            `;
         recordcode2+=`</table>`;
-        res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width">
-        <title id="title">1v1 PK arena</title>
-        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
-        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
-        <script>
-            var timeout,starttime;
-            $(document).ready(()=>{
-                $.post("/pk/status",{code:"${pkid}"},
-                    (data,status)=>{
-                        $("#recordstotal-inviter")[0].innerText=data.total.inviter;
-                        $("#recordstotal-participant")[0].innerText=data.total.participant;
-                        $("#lastsubmittime-inviter")[0].innerText=new Date(data.lastsubmit.inviter).toLocaleString();
-                        $("#lastsubmittime-participant")[0].innerText=new Date(data.lastsubmit.participant).toLocaleString();
-                        starttime=data.startTime;
-                        timeout=data.timeout;
-                        setInterval(()=>{
-                            if($("#gamestart").length>0){
-                                if(new Date().getTime()>=starttime)
-                                    $("#gamestart").remove();
-                                else{
-                                    var temp=parseInt((starttime-new Date().getTime())/1000);
-                                    $("#starttime")[0].innerText=temp+" s";
-                                }
-                            }
-                            var temp2=parseInt((timeout-new Date().getTime())/1000);
-                            $("#submittimelimit")[0].innerText=temp2+" s";
-                        },500);
-                    }
-                );
+        res.send(makebytemplate("1v1 PK arena",`
+<script>
+    var timeout,starttime;
+    $(document).ready(()=>{
+        $.post("/pk/status",{code:"${pkid}"},
+            (data,status)=>{
+                $("#recordstotal-inviter")[0].innerText=data.total.inviter;
+                $("#recordstotal-participant")[0].innerText=data.total.participant;
+                starttime=data.startTime;
+                timeout=data.timeout;
                 setInterval(()=>{
-                    $.post("/pk/status",{code:"${pkid}"},
-                        (data,status)=>{
-                            if(data.direct!="")location.pathname=data.direct;
-                            $("#recordstotal-inviter")[0].innerText=data.total.inviter;
-                            $("#recordstotal-participant")[0].innerText=data.total.participant;
-                            $("#lastsubmittime-inviter")[0].innerText=new Date(data.lastsubmit.inviter).toLocaleString();
-                            $("#lastsubmittime-participant")[0].innerText=new Date(data.lastsubmit.participant).toLocaleString();
-                            starttime=data.startTime;
-                            timeout=data.timeout;
-                            $("#records2").html(data.records);
+                    if($("#submitblock").hasClass("hide")){
+                        if(new Date().getTime()>=starttime)
+                            $("#gamestart").addClass("hide"),
+                            $("#submitblock").removeClass("hide");
+                        else{
+                            var temp=parseInt((starttime-new Date().getTime())/1000);
+                            $("#starttime")[0].innerText=temp+" s";
                         }
-                    );
-                },3000);
-                $(document).ready(()=>{
-                    $('#submit').click(()=>{
-                        if($("#gamestart").length==0)
-                            $.post("/pk/${pkid}/submit",
-                                {word: $('#submit-answer')[0].value},
-                                (data,status)=>{
-                                    if(data.error!=undefined)alert(data.error);
-                                    else location.href="";
-                                }
-                            );
-                    });
-                });
+                    }
+                    var temp2=parseInt((timeout.inviter-new Date().getTime())/1000);
+                    $("#timeremaining-inviter")[0].innerText=temp2+" s";
+                    temp2=parseInt((timeout.participant-new Date().getTime())/1000);
+                    $("#timeremaining-participant")[0].innerText=temp2+" s";
+                },500);
+            }
+        );
+        setInterval(()=>{
+            $.post("/pk/status",{code:"${pkid}"},
+                (data,status)=>{
+                    if(data.direct!="")location.pathname=data.direct;
+                    $("#recordstotal-inviter")[0].innerText=data.total.inviter;
+                    $("#recordstotal-participant")[0].innerText=data.total.participant;
+                    starttime=data.startTime;
+                    timeout=data.timeout;
+                    $("#recordcode").html(data.records);
+                    $("#recordcode2").html(data.records2);
+                }
+            );
+        },3000);
+        $(document).ready(()=>{
+            $('#submit').click(()=>{
+                if($("#gamestart").hasClass("hide"))
+                    $.post("/pk/${pkid}/submit",
+                        {word: $('#submit-answer')[0].value},
+                        (data,status)=>{
+                            if(data.error!=undefined)alert(data.error);
+                        }
+                    ),
+                    $('#submit-answer').val("");
             });
-        </script>
-    </head>
-    <body>
-        <h3>1v1 PK arena</h3>
-        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p><span id="recordstotal-inviter">0</span> <a
-        href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}
-        </a> VS <a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a> <span
-        id="recordstotal-participant">0</span></p>
-        <p><a href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}</a>'s last submission time: <span id="lastsubmittime-inviter"></span></p>
-        <p><a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a>'s last submission time: <span id="lastsubmittime-participant"></span></p>
-        <p>Checker: ${pkcodes[i].rule}</p>
-        <h4>Rule Describe</h4>
-        ${getRuleDescribeHTML(pkcodes[i].rule)}
-        <p id="gamestart"><strong>Game will start after <span id="starttime"></span></strong></p>
-        <h4>Submit (Please submit within <span id="submittimelimit"></span>)</h4>
-        <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
-        <h4>Records</h4>
-        ${recordcode}
-        <h4>Records submitted by the other party</h4>
-        <div id="records2">${recordcode2}</div>
-    </body>
-</html>
-        `);
+        });
+    });
+</script>
+        `,"/pk",getusername(req),`
+<div class="row">
+    <div class="column-one-thirth">
+        <div style="padding-right: 12px;">
+            <div class="topan-section-shadow">
+                <p style="text-align: center;"><a href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}</a>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> <span id="recordstotal-inviter">0</span>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-clock"></i> <span id="timeremaining-inviter"></span></p>
+                <div id="recordcode">${recordcode}</div>
+                <p></p>
+            </div>
+        </div>
+    </div>
+    <div class="column-one-thirth">
+        <div style="padding-left: 12px; padding-right: 12px;">
+            <div id="gamestart">
+                <div class="topan-section-shadow">
+                    <p style="text-align: center;">Start after <i class="fa fa-solid fa-clock"></i> <span id="starttime"></span></p>
+                </div>
+            </div>
+            <div id="submitblock" class="hide">
+                <div class="topan-section-shadow">
+                    <h4>Submit</h4>
+                    <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="column-one-thirth">
+        <div style="padding-left: 12px;">
+            <div class="topan-section-shadow">
+                <p style="text-align: center;"><a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> <span id="recordstotal-participant">0</span>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-clock"></i> <span id="timeremaining-participant"></span></p>
+                <div id="recordcode2">${recordcode2}</div>
+                <p></p>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+<div class="topan-section-shadow">
+    <h4>${pkcodes[i].rule}</h4>
+    ${getRuleDescribeHTML(pkcodes[i].rule)}
+    <p></p>
+</div>
+        `));
     }
 });
 app.post('/pk/status',(req,res)=>{
@@ -1424,14 +1429,26 @@ app.post('/pk/status',(req,res)=>{
     else if(checkpkfinish(i,pkid))res.status(200).json({direct: '/i'});
     else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.status(200).json({direct: '/pk'});
     else if(pkcodes[i].started){
-        var recs;
-        if(pkcodes[i].inviter!=uid) recs=pkcodes[i].records.inviter;
-        else                        recs=pkcodes[i].records.participant;
-        var recordcode="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        var recs=pkcodes[i].records.inviter;
+        var recordcode=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
         for(var j=recs.length-1;j>=0;j--)
-            recordcode+=`<tr><th>${j+1}</th>
-                <th>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,true)}</th></tr>`;
+            recordcode+=`
+<tr>
+    <td>${j+1}</td>
+    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].participant)}</td>
+</tr>
+            `;
         recordcode+=`</table>`;
+        recs=pkcodes[i].records.participant;
+        var recordcode2=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
+        for(var j=recs.length-1;j>=0;j--)
+            recordcode2+=`
+<tr>
+    <td>${j+1}</td>
+    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].inviter)}</td>
+</tr>
+            `;
+        recordcode2+=`</table>`;
         res.status(200).json({
             direct: "",
             started: true,
@@ -1439,12 +1456,10 @@ app.post('/pk/status',(req,res)=>{
                 inviter: pkcodes[i].records.inviter.length,
                 participant: pkcodes[i].records.participant.length
             },
-            lastsubmit: pkcodes[i].status.lastsubmit,
             startTime: pkcodes[i].startTime,
-            timeout: uid==pkcodes[i].inviter
-                        ?pkcodes[i].status.timeout.inviter
-                        :pkcodes[i].status.timeout.participant,
-            records: recordcode
+            timeout: pkcodes[i].status.timeout,
+            records: recordcode,
+            records2: recordcode2
         });
     }
     else res.status(200).json({started:false});
@@ -1587,6 +1602,9 @@ app.get('/ranking',(req,res)=>{
         `;
         rank++;
     }
+    fs.readFile("datas/users.json",'utf8',(err,data)=>{
+        userdata=JSON.parse(data);
+    });
     rankhtml+=`</table>`;
     res.send(makebytemplate("Ranking","","ranking",getusername(req),rankhtml));
 });
