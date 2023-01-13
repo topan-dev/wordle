@@ -1087,6 +1087,9 @@ app.post('/contest/*/task/*/submit',(req,res)=>{
         if(new Date().getTime()<contests[id].openTime){
             res.status(200).json({error:"The contest hasn't started yet."});
             return;
+        } else if (new Date().getTime() > contests[id].closeTime) {
+            res.status(200).json({error:"The contest is closed now."});
+            return;
         }
         var word=req.body.word;
         if(getrecords(Number(getCookie("loginid",req.headers.cookie)),id,taskid).solved)
@@ -1179,6 +1182,125 @@ app.get('/contest/*/ranking',(req,res)=>{
 </html>
         `);
     }
+});
+app.get("/contests/new", (req, res) => {
+    var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    if (!getUserdataById(userid).admin) {
+        res.send("<h1>Permission denied.</h1>");
+        return;
+    }
+    res.send(makebytemplate("New Contest", "", null, getusername(req), `
+<h2>New Contest - this page can only be visited by admins.</h2>
+<form method="POST" action="/contests/new/create">
+<p>Title: <input type="text" name="title">
+<p>Begin time: <input type="date" name="begindate"><input type="time" name="begintime"></p>
+<p>End time: <input type="date" name="enddate"><input type="time" name="endtime"></p>
+<input type="submit" id="submit" value="Submit">
+</form>
+    `));
+});
+app.post("/contests/new/create", (req, res) => {
+    var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    var beginTime = new Date(req.body.begindate + " " + req.body.begintime).getTime();
+    var closeTime = new Date(req.body.enddate + " " + req.body.endtime).getTime();
+    var contestid = contests.length;
+    if (!getUserdataById(userid).admin) {
+        res.send({status: 200, error: "Permission denied"});
+        return;
+    }
+    contests.push({
+        title: req.body.title,
+        author: userid,
+        openTime: beginTime,
+        closeTime: closeTime,
+        tasks: [],
+        users: []
+    });
+    fs.writeFile("datas/contest.json", JSON.stringify({contests:contests}), (err) => {});
+    res.redirect("/contest/" + contestid + "/configure");
+});
+app.get("/contest/*/configure", (req, res) => {
+    var codes="";
+    for(var i=0;i<rules.length;i++) {
+        codes+=`<option value="`+i+`">`+rules[i].name+`</option>`;
+    }
+    var answers = "";
+    var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    var contestid = Number(req.url.split("/contest/")[1].split("/configure")[0]);
+    var contest = contests[contestid];
+    for (var i in contest.tasks) {
+        answers += `<li><select value="${contest.tasks[i].rule}">${codes}</select> <input type="text" value="${contest.tasks[i].answer}"> <button class="remove">Remove</button></li>`
+    }
+    if (!getUserdataById(userid).admin) {
+        res.send({status: 200, error: "Permission denied"});
+        return;
+    } else if (!contests[contestid]) {
+        res.send("No Contests here");
+        return;
+    }
+    res.send(makebytemplate("Configure Contest", `
+<script>
+$(document).ready(function() {
+    function addAnswer(answer) {
+        $("#tasks").append(\`<li><select>${codes}</select> <input type="text" value="\${answer}"> <button class="remove">Remove</button></li>\`)
+    }
+    $("#addtask").click(function() {
+        addAnswer("");
+        $(".remove").click(function() {
+            $(this).parent().remove();
+        });
+    });
+    $("#submit").click(function() {
+        var submitData = [];
+        $("#tasks").children().each(function() {
+            submitData.push({rule: $($(this).children()[0]).find("option:selected").text(), answer: $($(this).children()[1]).val()});
+        });
+        console.log(submitData);
+        $.ajax({
+            url: "${req.url}/submit",
+            method: "POST",
+            data: {data: JSON.stringify(submitData)},
+            traditional: true,
+            success: (data, err) => {
+                console.log(data);
+                if (data.error) {
+                    alert(data.error);
+                } else if (data.redirect) {
+                    location.href = data.redirect;
+                }
+            }
+        });
+    });
+});
+</script>
+    `, null, getusername(req), `
+<h2>Configure Contest ${contests[contestid].title}</h2>
+<button id="addtask">Add</button>
+<ul id="tasks">${answers}</ul>
+<button id="submit">Submit</button>
+    `))
+});
+app.post("/contest/*/configure/submit", (req, res) => {
+    var data = JSON.parse(req.body.data);
+    var userid = getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    var contestid = Number(req.url.split("/contest/")[1].split("/configure")[0]);
+    if (!getUserdataById(userid).admin) {
+        res.send({status: 200, error: "Permission denied"});
+        return;
+    } else if (!contests[contestid]) {
+        res.send({error: "No Contests here"});
+        return;
+    }
+    for (var i in data) {
+        var d = data[i];
+        if (!checkword(d.answer)) {
+            res.send({error: "One of this words are not a proper word."});
+            return;
+        }
+    }
+    contests[contestid].tasks = data;
+    fs.writeFile("datas/contest.json", JSON.stringify({contests:contests}), (err) => {});
+    res.send({redirect: "/contest/" + contestid + "/home"});
 });
 app.get('/pk',(req,res)=>{
     var codes="";
