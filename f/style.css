@@ -14,8 +14,16 @@
     width: 50%;
     float: left;
 }
-.column-one-thirth{
+.column-one-third{
     width: 33.3333333%;
+    float: left;
+}
+.column-two-third{
+    width: 66.6666667%;
+    float: left;
+}
+.column-one-fourth{
+    width: 25%;
     float: left;
 }
 .column-one-fifth{
@@ -30,6 +38,12 @@
 .pk-statuscard{
     line-height: 8px;
     text-align: center;
+}
+
+.user-headimage{
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    vertical-align: middle;
 }
 
 .hide{

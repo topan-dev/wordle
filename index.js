@@ -192,6 +192,17 @@ function getidofuser(uid){
     while(userdata.users.length>i&&userdata.users[i].id!=uid)i++;
     return i;
 }
+function getheadimageurl(headimage){
+    var url="/headimage/default.png";
+    if(headimage.type=="upload")url=`/headimage/${headimage.url}`;
+    return url;
+}
+function getUserShowerHTML(uid){
+    var data=getUserdataById(uid);
+    return `
+<a href="/user/${data.id}"><img class="user-headimage" src="${getheadimageurl(data.headimage)}"> ${data.name}</a>
+    `;
+}
 function getrecords(uid,cid,tid){
     var contestdata=contests[cid].users;
     var i=0;
@@ -553,47 +564,41 @@ int main(){
 });
 
 app.get('/login',(req,res)=>{
-    res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width">
-        <title id="title">Login</title>
-        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
-        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
-        <script>
-            $(document).ready(()=>{
-                $("#user-login").click(()=>{
-                    $.post("/login/try",
-                        {
-                            name: $('#login-name')[0].value,
-                            password: $('#login-password')[0].value
-                        },
-                        (data,status)=>{
-                            if(data.error!=undefined)alert(data.error);
-                            else{
-                                setCookie("logined","true",1);
-                                setCookie("loginname",data.name,1);
-                                setCookie("loginchecker",data.checker,1);
-                                setCookie("loginid",data.id,1);
-                                location.pathname="";
-                            }
-                        }
-                    );
-                });
-            });
-        </script>
-    </head>
-    <body>
-        <h3>Login</h3>
-        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p><input placeholder="Username" id="login-name"></input></p>
-        <p><input placeholder="Password" type="password" id="login-password"></input></p>
-        <p><button id="user-login">Login</button></p>
-    </body>
-</html>
-    `);
+    if(checklogin(req))res.redirect("/");
+    else res.send(makebytemplate("Login",`
+<script>
+    $(document).ready(()=>{
+        $("#user-login").click(()=>{
+            $.post("/login/try",
+                {
+                    name: $('#login-name')[0].value,
+                    password: $('#login-password')[0].value
+                },
+                (data,status)=>{
+                    if(data.error!=undefined)alert(data.error);
+                    else{
+                        setCookie("logined","true",1);
+                        setCookie("loginname",data.name,1);
+                        setCookie("loginchecker",data.checker,1);
+                        setCookie("loginid",data.id,1);
+                        location.pathname="";
+                    }
+                }
+            );
+        });
+    });
+</script>
+    `,"user",getusername(req),`
+<div style="text-align: center;">
+    <br><br>
+    <h2>Login</h2>
+    <br>
+    <p><input placeholder="Username" id="login-name"></input></p>
+    <p><input placeholder="Password" type="password" id="login-password"></input></p>
+    <br>
+    <p><button id="user-login">Login</button></p>
+</div>
+    `));
 });
 app.post('/login/try',(req,res)=>{
     var i=0;
@@ -625,9 +630,9 @@ app.get('/user/*',(req,res)=>{
 <tr>
     <td><a href="/pk/${usrdata2[j]}/view">${usrdata2[j]}</a></td>
     <td>${pkdata[usrdata2[j]].code}</td>
-    <td><a href="/user/${pkdata[usrdata2[j]].inviter}">${getUserdataById(pkdata[usrdata2[j]].inviter).name}</td>
-    <td><a href="/user/${pkdata[usrdata2[j]].participant}">${getUserdataById(pkdata[usrdata2[j]].participant).name}</td>
-    <td><a href="/user/${pkdata[usrdata2[j]].winner}">${getUserdataById(pkdata[usrdata2[j]].winner).name}</td>
+    <td>${getUserShowerHTML(pkdata[usrdata2[j]].inviter)}</td>
+    <td>${getUserShowerHTML(pkdata[usrdata2[j]].participant)}</td>
+    <td>${getUserShowerHTML(pkdata[usrdata2[j]].winner)}</td>
     <td>${pkdata[usrdata2[j]].answer}</td>
     <td>${pkdata[usrdata2[j]].rule}</td>
     <td>${new Date(pkdata[usrdata2[j]].startTime).toLocaleString()}</td>
@@ -1060,8 +1065,7 @@ app.get('/contests',(req,res)=>{
         var codes="";
         for(var i=0;i<contests.length;i++){
             codes+=`<p><button onclick="location.pathname='/contest/${i}/home';">${contests[i].title}</button
-            > By <a href="/user/${contests[i].author}">${getUserdataById(contests[i].author).name}</a
-            >, Start at ${new Date(contests[i].openTime).toLocaleString()}</p>`;
+            > By ${getUserShowerHTML(contests[i].author)}, Start at ${new Date(contests[i].openTime).toLocaleString()}</p>`;
         }
         res.send(`
 <!DOCTYPE html>
@@ -1108,8 +1112,7 @@ app.get('/contest/*/home',(req,res)=>{
     <body>
         <h3>${contests[id].title}</h3>
         <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p>By <a href="/user/${contests[id].author}">${getUserdataById(contests[id].author).name}</a
-        >; Start at ${(new Date(contests[id].openTime)).toLocaleString()}</p>
+        <p>By ${getUserShowerHTML(contests[id].author)}; Start at ${(new Date(contests[id].openTime)).toLocaleString()}</p>
         <button onclick="location.pathname='/contest/${id}/ranking';">Ranking</button>
         <h4>Task List</h4>
         ${codes}
@@ -1235,9 +1238,7 @@ app.get('/contest/*/ranking',(req,res)=>{
         for(var i=0;i<counttasks;i++)
             codes+=`<th style="min-width: 40px;"><a href="/contest/`+id+`/task/`+String(i+1)+`">T`+String(i+1)+`</th>`;
         for(var i=0;i<rank.length;i++){
-            codes+=`<tr><th>`+String(i+1)+`</th><th><a href="/user/`
-                    +String(rank[i].id)+`">`+getUserdataById(rank[i].id).name
-                    +`</a></th><th>`+rank[i].score+`</th><th>`+String(rank[i].countrecords)+`</th></th>`;
+            codes+=`<tr><th>`+String(i+1)+`</th><th>${getUserShowerHTML(rank[i].id)}</th><th>`+rank[i].score+`</th><th>`+String(rank[i].countrecords)+`</th></th>`;
             for(var j=0;j<counttasks;j++)
                 if(!rank[i].tasks[j].solved){
                     if(rank[i].tasks[j].records.length>0)
@@ -1395,85 +1396,88 @@ app.get('/pk',(req,res)=>{
     var codes="";
     for(var i=0;i<rules.length;i++)
         codes+=`<option value="`+i+`">`+rules[i].name+`</option>`;
-    res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width">
-        <title id="title">1v1 PK arena</title>
-        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
-        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
-        <script>
-            var res={
-                code: null,
-                coolingEndTime: new Date().getTime(),
-                failureTime: new Date().getTime(),
+    res.send(makebytemplate("1v1 PK arena",`
+<script>
+    var res={
+        code: null,
+        coolingEndTime: new Date().getTime(),
+        failureTime: new Date().getTime(),
+    }
+    $(document).ready(()=>{
+        setInterval(()=>{
+            if(res.code!=null){
+                $("#res-pk-code")[0].innerText=res.code;
+                $("#res-pk-url")[0].innerText=location.origin+"/pk/"+res.code+"/play";
+                if(res.coolingEndTime-new Date().getTime()<=0)$("#res-cooling-end")[0].innerText="Complete.";
+                else $("#res-cooling-end")[0].innerText=String(parseInt((res.coolingEndTime-new Date().getTime())/60000))+" min "+String(parseInt((res.coolingEndTime-new Date().getTime())/1000)%60)+" s";
+                if(res.failureTime-new Date().getTime()<=0)$("#res-failure-time")[0].innerText="Expired.";
+                else $("#res-failure-time")[0].innerText=String(parseInt((res.failureTime-new Date().getTime())/60000))+" min "+String(parseInt((res.failureTime-new Date().getTime())/1000)%60)+" s";
             }
-            $(document).ready(()=>{
-                setInterval(()=>{
-                    if(res.code!=null){
-                        $("#res-pk-code")[0].innerText=res.code;
-                        $("#res-pk-url")[0].innerText=location.origin+"/pk/"+res.code+"/play";
-                        if(res.coolingEndTime-new Date().getTime()<=0)$("#res-cooling-end")[0].innerText="Complete.";
-                        else $("#res-cooling-end")[0].innerText=String(parseInt((res.coolingEndTime-new Date().getTime())/60000))+" min "+String(parseInt((res.coolingEndTime-new Date().getTime())/1000)%60)+" s";
-                        if(res.failureTime-new Date().getTime()<=0)$("#res-failure-time")[0].innerText="Expired.";
-                        else $("#res-failure-time")[0].innerText=String(parseInt((res.failureTime-new Date().getTime())/60000))+" min "+String(parseInt((res.failureTime-new Date().getTime())/1000)%60)+" s";
+        },500);
+        setInterval(()=>{
+            if(res.code!=null)
+                $.post("/pk/status",{code:res.code},
+                    (data,status)=>{
+                        if(data.error==undefined&&data.started)
+                            location.pathname="/pk/"+res.code+"/play";
                     }
-                },500);
-                setInterval(()=>{
-                    if(res.code!=null)
-                        $.post("/pk/status",{code:res.code},
-                            (data,status)=>{
-                                if(data.error==undefined&&data.started)
-                                    location.pathname="/pk/"+res.code+"/play";
-                            }
-                        );
-                },5000);
-                $("#create-pk-code").click(()=>{
-                    var temp=document.ruleform.ruleselect.value.split('+'),rule=temp[0];
-                    for(var i=1;i<temp.length;i++)rule+=" "+temp[i];
-                    $.post("/pk/create",
-                        {rule:document.ruleform.ruleselect.value},
-                        (data,status)=>{
-                            if(data.error!=undefined)alert(data.error);
-                            else{
-                                $("#remover").remove();
-                                res=data;
-                            }
-                        }
-                    );
-                });
-                $("#enter-pk-code").click(()=>{
-                    location.pathname="/pk/"+$("#pk-code")[0].value+"/play";
-                });
-            });
-        </script>
-    </head>
-    <body>
-        <h3>1v1 PK arena</h3>
-        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p>If you receive an invitation from others, please enter the invitation code below and confirm.</p>
-        <p>若您收到他人的邀请，请在下面输入邀请码并且确认。</p>
-        <p><input placeholder="PK code" id="pk-code"></input><button id="enter-pk-code">Enter</button></p>
-        <p>If you want to invite others, please select a competition rule and generate an invitation code.</p>
-        <p>若您想邀请他人，请选择一个比赛规则并生成邀请码。</p>
-        <p>Note that the invitation code is valid for 10 minutes. If no one joins the game within the validity period, it will become invalid. However, no new invitation code can be generated within 5 minutes after the invitation code is generated.</p>
-        <p>注意邀请码的有效期为 10 分钟，有效期内无人加入游戏则失效。而生成邀请码后 5 分钟内不能生成新的邀请码。</p>
-        <div id="remover">
-            <form name="ruleform">
-                <label>Rule: </label>
-                <select name="ruleselect">${codes}</select>
-            </form>
-            <button id="create-pk-code">Create</button>
+                );
+        },5000);
+        $("#create-pk-code").click(()=>{
+            var temp=document.ruleform.ruleselect.value.split('+'),rule=temp[0];
+            for(var i=1;i<temp.length;i++)rule+=" "+temp[i];
+            $.post("/pk/create",
+                {rule:document.ruleform.ruleselect.value},
+                (data,status)=>{
+                    if(data.error!=undefined)alert(data.error);
+                    else{
+                        $("#remover").remove();
+                        $("#pkdatas").removeClass("hide");
+                        res=data;
+                    }
+                }
+            );
+        });
+        $("#enter-pk-code").click(()=>{
+            location.pathname="/pk/"+$("#pk-code")[0].value+"/play";
+        });
+    });
+</script>
+    `,"pk",getusername(req),`
+<div class="row">
+    <div class="column-one-third">
+        <div class="topan-section-shadow">
+            <p>If you receive an invitation from others, please enter the invitation code below and confirm.</p>
+            <p>若您收到他人的邀请，请在下面输入邀请码并且确认。</p>
+            <p><input placeholder="PK code" id="pk-code"></input><button id="enter-pk-code">Enter</button></p>
         </div>
-        <p>Code: <span id="res-pk-code"></span></p>
-        <p>Cooling end time: <span id="res-cooling-end"></span></p>
-        <p>Failure time: <span id="res-failure-time"></span></p>
-        <p>Link: <span id="res-pk-url"></span></p>
-    </body>
-</html>
-    `);
+    </div>
+    <div class="column-two-third">
+        <div style="padding-left: 20px;">
+            <div class="topan-section-shadow">
+                <p>If you want to invite others, please select a competition rule and generate an invitation code.</p>
+                <p>若您想邀请他人，请选择一个比赛规则并生成邀请码。</p>
+                <p>Note that the invitation code is valid for 10 minutes. If no one joins the game within the validity period, it will become invalid. However, no new invitation code can be generated within 5 minutes after the invitation code is generated.</p>
+                <p>注意邀请码的有效期为 10 分钟，有效期内无人加入游戏则失效。而生成邀请码后 5 分钟内不能生成新的邀请码。</p>
+                <div id="remover">
+                    <form name="ruleform">
+                        <label>Rule: </label>
+                        <select name="ruleselect">${codes}</select>
+                    </form>
+                    <button id="create-pk-code">Create</button>
+                    <p></p>
+                </div>
+                <div id="pkdatas" class="hide">
+                    <p>Code: <span id="res-pk-code"></span></p>
+                    <p>Cooling end time: <span id="res-cooling-end"></span></p>
+                    <p>Failure time: <span id="res-failure-time"></span></p>
+                    <p>Link: <span id="res-pk-url"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    `));
 });
 app.get('/pk/*/play',(req,res)=>{
     var pkid=req.url.split('/pk/')[1].split('/')[0];
@@ -1585,18 +1589,18 @@ app.get('/pk/*/play',(req,res)=>{
         });
     });
 </script>
-        `,"/pk",getusername(req),`
+        `,"pk",getusername(req),`
 <div class="row">
-    <div class="column-one-thirth">
+    <div class="column-one-third">
         <div style="padding-right: 12px;">
             <div class="topan-section-shadow">
-                <p style="text-align: center;"><a href="/user/${pkcodes[i].inviter}">${getUserdataById(pkcodes[i].inviter).name}</a>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> <span id="recordstotal-inviter">0</span>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-clock"></i> <span id="timeremaining-inviter"></span></p>
+                <p style="text-align: center;">${getUserShowerHTML(pkcodes[i].inviter)}&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> <span id="recordstotal-inviter">0</span>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-clock"></i> <span id="timeremaining-inviter"></span></p>
                 <div id="recordcode">${recordcode}</div>
                 <p></p>
             </div>
         </div>
     </div>
-    <div class="column-one-thirth">
+    <div class="column-one-third">
         <div style="padding-left: 12px; padding-right: 12px;">
             <div id="gamestart">
                 <div class="topan-section-shadow">
@@ -1617,10 +1621,10 @@ app.get('/pk/*/play',(req,res)=>{
             </div>
         </div>
     </div>
-    <div class="column-one-thirth">
+    <div class="column-one-third">
         <div style="padding-left: 12px;">
             <div class="topan-section-shadow">
-                <p style="text-align: center;"><a href="/user/${pkcodes[i].participant}">${getUserdataById(pkcodes[i].participant).name}</a>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> <span id="recordstotal-participant">0</span>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-clock"></i> <span id="timeremaining-participant"></span></p>
+                <p style="text-align: center;">${getUserShowerHTML(pkcodes[i].participant)}&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> <span id="recordstotal-participant">0</span>&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-clock"></i> <span id="timeremaining-participant"></span></p>
                 <div id="recordcode2">${recordcode2}</div>
                 <p></p>
             </div>
@@ -1748,47 +1752,56 @@ app.get('/pk/*/view',(req,res)=>{
     else if(id<0||pkdata.length<=id)res.sendStatus(404);
     else{
         var recs=pkdata[id].records.inviter;
-        var inviterrecords="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        var inviterrecords=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
         for(var j=recs.length-1;j>=0;j--)
-            inviterrecords+=`<tr><th>${j+1}</th>
-                <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th></tr>`;
+            inviterrecords+=`
+<tr>
+    <th>${j+1}</th>
+    <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th>
+</tr>
+            `;
         inviterrecords+=`</table>`;
         recs=pkdata[id].records.participant;
-        var participantrecords="<table border='1'><tr><th>ID</th><th>Result</th></tr>";
+        var participantrecords=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
         for(var j=recs.length-1;j>=0;j--)
-            participantrecords+=`<tr><th>${j+1}</th>
-                <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th></tr>`;
+            participantrecords+=`
+<tr>
+    <th>${j+1}</th>
+    <th>${wordlechecker(recs[j],pkdata[id].answer,pkdata[id].rule,false)}</th>
+</tr>
+            `;
         participantrecords+=`</table>`;
-        res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width">
-        <title id="title">1v1 PK arena</title>
-        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
-        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
-        <script>
-        </script>
-    </head>
-    <body>
-        <h3>PK Record</h3>
-        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <p>Inviter: <a href="/user/${pkdata[id].inviter}">${getUserdataById(pkdata[id].inviter).name}</a> (${pkdata[id].records.inviter.length} record(s))</p>
-        <p>Participant: <a href="/user/${pkdata[id].participant}">${getUserdataById(pkdata[id].participant).name}</a> (${pkdata[id].records.participant.length} record(s))</p>
-        <p>Winner: <a href="/user/${pkdata[id].winner}">${getUserdataById(pkdata[id].winner).name}</a></p>
-        <p>Code: ${pkdata[id].code}</p>
-        <p>Start at ${new Date(pkdata[id].startTime).toLocaleString()}</p>
-        <p>Rule: ${pkdata[id].rule}</p>
-        <h4>Rule Describe</h4>
-        ${getRuleDescribeHTML(pkdata[id].rule)}
-        <h4><a href="/user/${pkdata[id].inviter}">${getUserdataById(pkdata[id].inviter).name}</a>'s Records</h4>
-        ${inviterrecords}
-        <h4><a href="/user/${pkdata[id].participant}">${getUserdataById(pkdata[id].participant).name}</a>'s Records</h4>
-        ${participantrecords}
-    </body>
-</html>
-        `);
+        res.send(makebytemplate("PK Record",``,"pk",getusername(req),`
+<div class="row">
+    <div class="column-one-fourth">
+        <div class="topan-section-shadow">
+            <p style="text-align: center;">${getUserShowerHTML(pkdata[id].inviter)}&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> ${pkdata[id].records.inviter.length}</p>
+            <div id="recordcode">${inviterrecords}</div>
+            <p></p>
+        </div>
+    </div>
+    <div class="column-one-second">
+        <div style="padding-left: 20px; padding-right: 20px;">
+            <div class="topan-section-shadow">
+                <p>Code: ${pkdata[id].code}</p>
+                <p>Winner: ${getUserShowerHTML(pkdata[id].winner)}</p>
+                <p>Answer: ${pkdata[id].answer}</p>
+                <p>Start at ${new Date(pkdata[id].startTime).toLocaleString()}</p>
+                <h4>${pkdata[id].rule}</h4>
+                ${getRuleDescribeHTML(pkdata[id].rule)}
+                <p></p>
+            </div>
+        </div>
+    </div>
+    <div class="column-one-fourth">
+        <div class="topan-section-shadow">
+            <p style="text-align: center;">${getUserShowerHTML(pkdata[id].participant)}&nbsp;&nbsp;&nbsp;<i class="fa fa-solid fa-record-vinyl"></i> ${pkdata[id].records.participant.length}</p>
+            <div id="recordcode2">${participantrecords}</div>
+            <p></p>
+        </div>
+    </div>
+</div>
+        `));
     }
 });
 
@@ -1808,7 +1821,7 @@ app.get('/ranking',(req,res)=>{
         rankhtml+=`
 <tr>
     <td>${rank}</td>
-    <td><a href="/user/${temp[i].id}">${temp[i].name}</a></td>
+    <td>${getUserShowerHTML(temp[i].id)}</td>
     <td>${parseInt(sum)}</td>
     <td>${parseInt(temp[i].data.score.credit)}</td>
     <td>${parseInt(temp[i].data.score.contest)}</td>
