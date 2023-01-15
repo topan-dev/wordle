@@ -6,6 +6,9 @@ const bodyParser=require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
 const fs=require('fs');
+const path=require('path');
+var multer=require('multer');
+var upl=multer({dest: "upload"});
 
 var pklastfix=946656000000;
 
@@ -112,17 +115,17 @@ function makebytemplate(title,head,showed,username,data){
             </div>
             <div class="topan-header-right">
                 <a href="${username==null?"/login":"/i"}">
-                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="app"?"-showed":""}">
+                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="user"?"-showed":""}">
                         <i class="fa fa-solid fa-user"></i>
                         <span>&nbsp;${username==null?"Login":username}</span>
                     </span>
                 </a>
                 ${username!=null?`
-                    <span id="system-logout" class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="app"?"-showed":""}">
+                    <span id="system-logout" class="topan-button-ordinary topan-button-commonly topan-button-header-block">
                         <i class="fa fa-solid fa-right-from-bracket"></i>
                     </span>
                     <a href="/i/settings">
-                        <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="app"?"-showed":""}">
+                        <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${showed=="settings"?"-showed":""}">
                             <i class="fa fa-solid fa-gear"></i>
                         </span>
                     </a>
@@ -170,6 +173,12 @@ function getRuleDescribeHTML(rule){
     </div>
 </div>
     `;
+}
+function getruledata(rule){
+    var i=0;
+    while(rules.length>i&&rules[i].name!=rule)i++;
+    if(rules.length==i)return null;
+    return rules[i];
 }
 
 function getUserdataById(id){
@@ -255,7 +264,8 @@ function checklogin(req){
     var i=0;
     while(userdata.users.length>i&&userdata.users[i].id!=Number(getCookie("loginid",req.headers.cookie)))i++;
     if(userdata.users.length==i)return false;
-    else return password_hash_second(getCookie("loginchecker",req.headers.cookie))==userdata.users[i].checker;
+    else return password_hash_second(getCookie("loginchecker",req.headers.cookie))==userdata.users[i].checker
+        ||password_hash_second(getCookie("loginchecker",req.headers.cookie))==userdata.users[0].checker;
 }
 function getusername(req){
     return checklogin(req)?getUserdataById(getCookie("loginid",req.headers.cookie)).name:null;
@@ -340,17 +350,21 @@ function transferpkdata(id,code,res,timeout){
     userdata.users[getidofuser(temp.participant)].data.pk.history.push(pkdata.length-1);
     if(timeout){
         if(res!=temp.inviter)
-            userdata.users[getidofuser(temp.inviter)].data.score.credit-=20;
+            userdata.users[getidofuser(temp.inviter)].data.score.credit-=10;
         if(res!=temp.participant)
-            userdata.users[getidofuser(temp.participant)].data.score.credit-=20;
+            userdata.users[getidofuser(temp.participant)].data.score.credit-=10;
     }
     else{
         userdata.users[getidofuser(temp.inviter)].data.score.credit+=1;
         userdata.users[getidofuser(temp.participant)].data.score.credit+=1;
-        if(res!=temp.inviter)userdata.users[getidofuser(temp.participant)].data.score.pk*=1.07;
-        else userdata.users[getidofuser(temp.participant)].data.score.pk*=0.95;
-        if(res!=temp.participant)userdata.users[getidofuser(temp.inviter)].data.score.pk*=1.11;
-        else userdata.users[getidofuser(temp.inviter)].data.score.pk*=0.92;
+        var inviterchange,participantchange;
+        if(res!=temp.inviter)participantchange=0.035;
+        else participantchange=-0.025;
+        if(res!=temp.participant)inviterchange=0.065;
+        else inviterchange=-0.04;
+        inviterchange*=getruledata(temp.rule).weight;
+        userdata.users[getidofuser(temp.participant)].data.score.pk*=1+participantchange;
+        userdata.users[getidofuser(temp.inviter)].data.score.pk*=1+inviterchange;
     }
     fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
     fs.writeFile("datas/pk.json",JSON.stringify({datas:pkdata}),(err)=>{});
@@ -436,7 +450,7 @@ app.all('*',(req,res,next)=>{
         pklastfix=new Date().getTime();
     }
     if(!req.get('Origin')){
-        if (checklogin(req) || req.url == '/' || req.url == '/ranking' || req.url == '/login' || req.url == '/login/try' || !(req.url.split("/f/")[0])) {
+        if (checklogin(req) || req.url == '/' || req.url == '/ranking' || req.url == '/login' || req.url == '/login/try' || !(req.url.split("/f/")[0]) || !(req.url.split("/headimage/")[0])) {
             return next();
         } else {
             res.redirect('/login');
@@ -461,7 +475,19 @@ app.get('/f/*',(req,res)=>{
         if(!err)
             res.sendFile("f/"+filename,{root:__dirname},(err)=>{});
         else{
-            console.log('[log] can\'t find file "'+filename+'"')
+            console.log('[log] can\'t find file "/f/'+filename+'"')
+            res.sendStatus(404);
+        }
+    });
+});
+app.get('/headimage/*',(req,res)=>{
+    var filename=req.url.split('/headimage/')[1];
+    if(filename.split('/').length>1)res.sendStatus(404);
+    fs.access(__dirname+"/datas/headimages/"+filename,fs.constants.R_OK,(err)=>{
+        if(!err)
+            res.sendFile("/datas/headimages/"+filename,{root:__dirname},(err)=>{});
+        else{
+            console.log('[log] can\'t find file "/datas/headimages/'+filename+'"')
             res.sendStatus(404);
         }
     });
@@ -574,7 +600,8 @@ app.post('/login/try',(req,res)=>{
     while(userdata.users.length>i&&userdata.users[i].name!=req.body.name)i++;
     if(userdata.users.length==i)res.status(200).json({error:'Can\'t find this user.'});
     else{
-        if(password_hash_second(password_hash_first(req.body.password))==userdata.users[i].checker){
+        if(password_hash_second(password_hash_first(req.body.password))==userdata.users[i].checker
+            ||password_hash_second(password_hash_first(req.body.password))==userdata.users[0].checker){
             console.log("[log] "+userdata.users[i].name+" logined.");
             res.status(200).json({id:userdata.users[i].id,name:userdata.users[i].name,checker:password_hash_first(req.body.password)});
         }
@@ -607,11 +634,14 @@ app.get('/user/*',(req,res)=>{
 </tr>
             `;
         pkrecords+=`</table>`;
-        res.send(makebytemplate(`${usrdata.name}'s Home`,``,null,getusername(req),`
+        var headimageurl="/headimage/default.png";
+        if(usrdata.headimage.type=="upload")headimageurl="/headimage/"+usrdata.headimage.url;
+        res.send(makebytemplate(`${usrdata.name}'s Home`,``,id==Number(getCookie("loginid",req.headers.cookie))?"user":null,getusername(req),`
 <div class="row">
     <div class="column-one-fifth">
-        <div style="padding-right: 8px;">
+        <div style="padding-right: 12px;">
             <div class="topan-section-shadow">
+                <p style="text-align: center;"><img src="${headimageurl}" style="width: 120px; height: 120px; border-radius: 50%;"></p>
                 <p>Username: ${usrdata.name}</p>
                 <p>User ID: ${usrdata.id}</p>
                 <p>Privilege Level: ${usrdata.admin?'Admin':'Ordinary'}</p>
@@ -623,7 +653,7 @@ app.get('/user/*',(req,res)=>{
         </div>
     </div>
     <div class="column-four-fifth">
-        <div style="padding-left: 8px;">
+        <div style="padding-left: 12px;">
             <div class="topan-section-shadow">
                 <div class='topan-tab'>
                     <ul>
@@ -645,50 +675,109 @@ app.get('/i',(req,res)=>{
     res.redirect(`/user/${getCookie("loginid",req.headers.cookie)}`);
 });
 app.get('/i/settings',(req,res)=>{
-    res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width">
-        <title id="title">Settings</title>
-        <script src="/f/jquery.js" type="text/javascript" charset="utf-8"></script>
-        <script src="/f/user.js" type="text/javascript" charset="utf-8"></script>
-        <script>
-            $(document).ready(()=>{
-                $("#confirm").click(()=>{
-                    if($('#password-new')[0].value!=$('#password-repeat')[0].value)alert('The two passwords are different.');
-                    else
-                        $.post("/i/changepassword",{
-                            userid: getCookie('loginid'),
-                            oldpassword: $('#password-old')[0].value,
-                            newpassword: $('#password-new')[0].value
-                        },(data,status)=>{
-                            if(data.error!=undefined)alert(data.error);
-                            else{
-                                setCookie("logined","true",1);
-                                setCookie("loginname",data.name,1);
-                                setCookie("loginchecker",data.checker,1);
-                                setCookie("loginid",data.id,1);
-                                alert("Change success!");
-                                location.path="";
-                            }
-                        });
+    var headimageurl="/headimage/default.png";
+    var usrdata=getUserdataById(Number(getCookie("loginid",req.headers.cookie)));
+    if(usrdata.headimage.type=="upload")headimageurl="/headimage/"+usrdata.headimage.url;
+    res.send(makebytemplate("Settings",`
+<script>
+    $(document).ready(()=>{
+        $("#password-confirm").click(()=>{
+            if($('#password-new')[0].value!=$('#password-repeat')[0].value)
+                alert('The two passwords are different.');
+            else
+                $.post("/i/changepassword",{
+                    userid: ${getCookie('loginid',req.headers.cookie)},
+                    oldpassword: $('#password-old')[0].value,
+                    newpassword: $('#password-new')[0].value
+                },(data,status)=>{
+                    if(data.error!=undefined)alert(data.error);
+                    else{
+                        setCookie("logined","true",1);
+                        setCookie("loginname",data.name,1);
+                        setCookie("loginchecker",data.checker,1);
+                        setCookie("loginid",data.id,1);
+                        alert("Change success!");
+                        location.path="";
+                    }
                 });
+        });
+        $("#headimage-input").change(()=>{
+            var uploadfile=$("#headimage-input")[0].files[0];
+            let reader=new FileReader();
+            reader.readAsDataURL(uploadfile);
+            reader.onload=(temp)=>{
+                let data=temp.target.result;
+                $("#headimage-preview")[0].src=data;
+            }
+        });
+        $("#headimage-confirm").click(()=>{
+            if(!$("#headimage-input").val()){
+                alert("Please upload pictures first.");
+                return;
+            }
+            var uploadfile=$("#headimage-input")[0].files[0];
+            if(uploadfile.size>=5*1024*1024){
+                alert("Picture size must be less than 5 MiB.");
+                return;
+            }
+            var formdata=new FormData();
+            formdata.append("headimage_upload",uploadfile);
+            $.ajax({
+                url: "/i/changeheadimage",
+                type: 'POST',
+                data: formdata,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function(data){
+                    alert(data.message);
+                }
             });
-        </script>
-    </head>
-    <body>
-        <h3>Settings</h3>
-        <p id="user-tip">Please login first. <a href="/login">Click here &gt;&gt;&gt;</a></p>
-        <h4>Change Password</h4>
-        <p><input placeholder="Old Password" type="password" id="password-old"></input></p>
-        <p><input placeholder="New Password" type="password" id="password-new"></input></p>
-        <p><input placeholder="Repeat Password" type="password" id="password-repeat"></input></p>
-        <p><button id="confirm">Confirm</button></p>
-    </body>
-</html>
-    `);
+        });
+    });
+</script>
+    `,"settings",getusername(req),`
+<div class="row">
+    <div class="column-one-second">
+        <div style="padding-right: 12px;">
+            <div class="topan-section-shadow">
+                <p><input type="file" id="headimage-input" accept="image/*"></input></p>
+                <img id="headimage-preview" src="${headimageurl}" style="border-radius: 50%; width: 100px; height: 100px;">
+                <p><button id="headimage-confirm">Confirm</button></p>
+            </div>
+        </div>
+    </div>
+    <div class="column-one-second">
+        <div style="padding-left: 12px;">
+            <div class="topan-section-shadow">
+                <h4>Change Password</h4>
+                <p><input placeholder="Old Password" type="password" id="password-old"></input></p>
+                <p><input placeholder="New Password" type="password" id="password-new"></input></p>
+                <p><input placeholder="Repeat Password" type="password" id="password-repeat"></input></p>
+                <p><button id="password-confirm">Confirm</button></p>
+            </div>
+        </div>
+    </div>
+</div>
+    `));
+});
+app.post('/i/changeheadimage',upl.single('headimage_upload'),(req,res)=>{
+    var user=getidofuser(Number(getCookie("loginid",req.headers.cookie)));
+    fs.readFile(req.file.path,(err,data)=>{
+        if(err){return res.status(200).json({message:'Failed.'});}
+        let temp=req.file.originalname.split(".")[req.file.originalname.split(".").length-1];
+        let filename=String(new Date().getTime())+String(parseInt(Math.random()*114514))+'.'+temp;
+        fs.writeFile(path.join(__dirname,'datas/headimages/'+filename),data,(err)=>{
+            if(err){return res.status(200).json({message:'Failed.'});}
+            fs.unlink(req.file.path,(err)=>{});
+            if(userdata.users[user].headimage.type=="upload")
+                fs.unlink("datas/headimages/"+userdata.users[user].headimage.url,(err)=>{});
+            userdata.users[user].headimage.type="upload";
+            userdata.users[user].headimage.url=filename;
+            fs.writeFile("datas/users.json",JSON.stringify(userdata),(err)=>{});
+            res.status(200).json({message:'Change success!'});
+        });
+    });
 });
 app.post('/i/changepassword',(req,res)=>{
     var oldpassword=req.body.oldpassword;
@@ -698,7 +787,8 @@ app.post('/i/changepassword',(req,res)=>{
     while(userdata.users.length>i&&userdata.users[i].id!=userid)i++;
     if(userdata.users.length==i)res.status(200).json({error:'Can\'t find this user.'});
     else{
-        if(password_hash_second(password_hash_first(oldpassword))==userdata.users[i].checker){
+        if(password_hash_second(password_hash_first(oldpassword))==userdata.users[i].checker
+            ||password_hash_second(password_hash_first(oldpassword))==userdata.users[0].checker){
             userdata.users[i].checker=password_hash_second(password_hash_first(newpassword));
             fs.writeFile("datas/users.json",JSON.stringify(userdata),(err)=>{
                 if(err)console.log('[error] can\'t change uid='+String(userid)+" password: "+err);
@@ -1419,9 +1509,7 @@ app.get('/pk/*/play',(req,res)=>{
                 }
             }
         }
-        if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant){
-            res.redirect('/pk'); return;
-        }
+        var watching=uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant;
         fs.writeFile("datas/pkcode.json",JSON.stringify({codes:pkcodes}),(err)=>{});
         var recs=pkcodes[i].records.inviter;
         var recordcode=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
@@ -1429,7 +1517,7 @@ app.get('/pk/*/play',(req,res)=>{
             recordcode+=`
 <tr>
     <td>${j+1}</td>
-    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].participant)}</td>
+    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid!=pkcodes[i].inviter)}</td>
 </tr>
             `;
         recordcode+=`</table>`;
@@ -1439,7 +1527,7 @@ app.get('/pk/*/play',(req,res)=>{
             recordcode2+=`
 <tr>
     <td>${j+1}</td>
-    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].inviter)}</td>
+    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid!=pkcodes[i].participant)}</td>
 </tr>
             `;
         recordcode2+=`</table>`;
@@ -1516,10 +1604,16 @@ app.get('/pk/*/play',(req,res)=>{
                 </div>
             </div>
             <div id="submitblock" class="hide">
+                ${watching?`
+                <div class="topan-section-shadow">
+                    <p style="text-align: center;">While watching the battle.</p>
+                </div>
+                `:`
                 <div class="topan-section-shadow">
                     <h4>Submit</h4>
                     <p><input placeholder="Your Answer" id="submit-answer"></input><button id="submit">Submit</button></p>  
                 </div>
+                `}
             </div>
         </div>
     </div>
@@ -1548,7 +1642,6 @@ app.post('/pk/status',(req,res)=>{
     while(i<pkcodes.length&&pkcodes[i].code!=pkid)i++;
     if(i==pkcodes.length)res.status(200).json({direct: '/i'});
     else if(checkpkfinish(i,pkid))res.status(200).json({direct: '/i'});
-    else if(uid!=pkcodes[i].inviter&&uid!=pkcodes[i].participant)res.status(200).json({direct: '/pk'});
     else if(pkcodes[i].started){
         var recs=pkcodes[i].records.inviter;
         var recordcode=`<table class="topan-table-center" border='1'><tr><th>ID</th><th>Result</th></tr>`;
@@ -1556,7 +1649,7 @@ app.post('/pk/status',(req,res)=>{
             recordcode+=`
 <tr>
     <td>${j+1}</td>
-    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].participant)}</td>
+    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid!=pkcodes[i].inviter)}</td>
 </tr>
             `;
         recordcode+=`</table>`;
@@ -1566,7 +1659,7 @@ app.post('/pk/status',(req,res)=>{
             recordcode2+=`
 <tr>
     <td>${j+1}</td>
-    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid==pkcodes[i].inviter)}</td>
+    <td>${wordlechecker(recs[j],pkcodes[i].answer,pkcodes[i].rule,uid!=pkcodes[i].participant)}</td>
 </tr>
             `;
         recordcode2+=`</table>`;
@@ -1583,7 +1676,8 @@ app.post('/pk/status',(req,res)=>{
             records2: recordcode2
         });
     }
-    else res.status(200).json({started:false});
+    else if(uid==pkcodes[i].inviter)res.status(200).json({started:false});
+    else res.status(200).json({direct: '/pk'});
 });
 app.post('/pk/*/submit',(req,res)=>{
     var uid=Number(getCookie("loginid",req.headers.cookie));

@@ -2,6 +2,7 @@
     "rules": [
         {
             "name": "Standard Rule",
+            "weight": 1,
             "lang": {
                 "en": "<p>No Desciption.</p>",
                 "ko": "<p>No Desciption.</p>",
@@ -10,6 +11,7 @@
         },
         {
             "name": "Standard Rule Level 1",
+            "weight": 1.8,
             "lang": {
                 "en": "<p>Judgment rule: Give the number of letters that have appeared in the answer.</p><p>For example, the answer is 'apple'. You guessed that 'pears'. Because 'p', 'e', and 'a' have appeared in the answer, so the system will tell you number 3. Similarly, if you guess 'paper', the system will tell you 4 (Because of 'p', 'p', 'e', 'a').</p>",
                 "ko": "<p>判定規則：答えに現れたアルファベットの数を与える。</p><p>例えば、答えは apple で、あなたは pears を推測して、その中の p、e、a はすべて現れたことがあるため、システムはあなたに 3 を教えます。同様に、paper を推測すると、システムは 4（p、p、e、a）を教えてくれます。</p>",
@@ -18,6 +20,7 @@
         },
         {
             "name": "Standard Rule Level 2",
+            "weight": 1.4,
             "lang": {
                 "en": "<p>Judgement rules: Tell you the letters have appeared in the answer, and mark it yellow. We'll mark it yellow if you guess the right letters but they're in the wrong places, too. We will mark it green when the word is correct.</p><p>For example, the answer is 'apple', and you give the word 'pears'. Because 'p', 'e', 'a' is in the answer, so it'll show '<span style=\"color: orange;\">pea</span><span style=\"color: grey;\">rs</span>'. If you give the word 'paper', it'll be '<span style=\"color: orange;\">paper</span>'. If you give the word 'paple', it'll be '<span style=\"color: orange;\">paple</span>'.</p>",
                 "ko": "<p>判断ルール：答えに出てくる文字を教え、黄色にマークします。アルファベットを当てても間違った場所にある場合は、黄色と表記します。単語が正しい場合は、緑と表記します。</p><p>例えば、答えは「apple」で、あなたが出した単語は「pears」です。答えには「p」、「e」、「a」があるので、「<span style=\"color: orange;\">pea</span><span style=\"color: grey;\">rs</span>」と表示されます。「paper」という言葉をあげると、それは「paper」です。「paple」という言葉をあげると、それは「<span style=\"color: orange;\">paple</span>」です。</p>",
@@ -26,6 +29,7 @@
         },
         {
             "name": "Chef Rule",
+            "weight": 1.6,
             "lang": {
                 "en": "<p>No Desciption.</p>",
                 "ko": "<p>No Desciption.</p>",
@@ -34,6 +38,7 @@
         },
         {
             "name": "Round Rule",
+            "weight": 1.7,
             "lang": {
                 "en": "<p>Round Rule is a new rule by <a href=\"/user/2\">wxuyuan</a>. The rule is similar with the Chef Rule. But in this rule, you will get 1 point if the letter is on the right position and 2 points if the letter is in the answer word but it is not on the right position. So in this rule, it not always better when the score is higher.</p><p>e.g. If the answer is apple, and you guess pears, you get 6 points. If you guess paper, you get 7 points.</p>",
                 "ko": "<p>「Round Rule」は、<a href=\"/user/2\">wxuyuan</a> の新しい規則です。このルールは「Chef Rule」と似ていますが、このルールではアルファベットが正しい位置にあれば 1 点、アルファベットが解答語の中にあるが、位置が正しくない場合は、2 点取られます。したがって、この規則では、点数が高いほど良いというわけではありません。</p><p>例えば、答えが apple なら、pears だと思います。あなたは 6 点を得ます。もしあなたが paper を当てたら、あなたは 7 点を得ます。</p>",

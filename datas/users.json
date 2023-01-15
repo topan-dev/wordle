@@ -3,7 +3,7 @@
         {
             "id": 0,
             "name": "System",
-            "checker": "",
+            "checker": "cab0cf917295e2cef791ca664a6c6f70fa4414c571267f4b143869a5bb6033f2836a408c4b07bf03ef3136cc0d02dfbc236da38a61dcd1a082462e6bec66462d",
             "admin": true,
             "data": {
                 "score": {
@@ -15,6 +15,9 @@
                     "coolingEndTime": 946656000000,
                     "history": []
                 }
+            },
+            "headimage": {
+                "type": "default"
             }
         }
     ]

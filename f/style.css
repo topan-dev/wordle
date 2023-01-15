@@ -10,16 +10,20 @@
     margin-left: auto;
     margin-right: auto;
 }
+.column-one-second{
+    width: 50%;
+    float: left;
+}
+.column-one-thirth{
+    width: 33.3333333%;
+    float: left;
+}
 .column-one-fifth{
     width: 20%;
     float: left;
 }
 .column-four-fifth{
     width: 80%;
-    float: left;
-}
-.column-one-thirth{
-    width: 33.3333333%;
     float: left;
 }
 
