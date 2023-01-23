@@ -1,0 +1,23 @@
+<div class="topan-section-shadow">
+    <h3>Rules Describe</h3>
+    <% rules.forEach((rule)=>{ %>
+        <h4><%=rule.name%></h4>
+        <div class='topan-tab'>
+            <ul>
+                <li class='topan-tab-showed'>中文</li>
+                <li>English</li>
+                <li>日本語</li>
+            </ul>
+            <div class='topan-tab-showed'>
+                <%-rule.lang.zh%>
+            </div>
+            <div>
+                <%-rule.lang.en%>
+            </div>
+            <div>
+                <%-rule.lang.ko%>
+            </div>
+        </div>
+    <% }); %>
+    <p></p>
+</div>

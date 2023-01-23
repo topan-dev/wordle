@@ -1,6 +1,6 @@
 {
-  "name": "wordlesystem",
-  "version": "1.0.0",
+  "name": "wordle",
+  "version": "1.0.0-alpha",
   "description": "A small game - Wordle.",
   "main": "index.js",
   "scripts": {
@@ -10,8 +10,23 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "body-parser": "^1.20.1",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "ejs": "^3.1.8",
     "express": "^4.18.2",
+    "js-yaml": "^4.1.0",
     "multer": "^1.4.5-lts.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topan-dev/wordle.git"
+  },
+  "keywords": [
+    "game",
+    "wordle"
+  ],
+  "bugs": {
+    "url": "https://github.com/topan-dev/wordle/issues"
+  },
+  "homepage": "https://github.com/topan-dev/wordle#readme"
 }

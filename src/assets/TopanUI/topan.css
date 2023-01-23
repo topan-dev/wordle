@@ -1,0 +1,79 @@
+@import "https://cdn.bootcdn.net/ajax/libs/font-awesome/6.2.1/css/all.min.css";
+/* https://fontawesome.com/icons */
+/* 旋转：fa-spin */
+@import "src/header.css";
+@import "src/button.css";
+@import "src/tab.css";
+@import "src/section.css";
+@import "src/table.css";
+@import "src/highlight.css";
+@import "src/markdown.css";
+
+body{
+    background-color: rgb(233,233,233);
+    --topan-colors-main: rgb(63, 94, 160);
+    --topan-colors-main-modify1: rgb(63, 94, 160, 0.08);
+    --topan-colors-stress: rgb(206, 52, 129);
+    --topan-footer-height: 130px;
+    --markdown-codeblock-bordercolor: var(--topan-colors-main);
+    --markdown-codeblock-copybutton: "复制";
+}
+
+a{
+    text-decoration: none;
+    color: inherit;
+    transition-duration: 0.25s;
+}
+a:hover{
+    color: rgb(86, 148, 199);
+}
+.topan-header a{
+    text-decoration: none;
+    color: inherit;
+}
+
+.topan-outer{
+    position: fixed;
+    top: 50px; left: 0px;
+    width: 100%;
+    height: calc(100% - 50px);
+    overflow-x: auto;
+	margin: 0; padding: 0;
+}
+.topan-page{
+	min-height: 100%;
+	height: auto !important;
+	position: relative;
+}
+.topan-mainpage,.topan-mainpage-auto{
+    margin-right: auto;
+    margin-left: auto;
+	padding-bottom: var(--topan-footer-height);
+}
+.topan-footer{
+	position: absolute;
+	bottom: 0;
+	width: 100%;
+	height: var(--topan-footer-height);
+	clear: both;
+    background: white;
+}
+
+.topan-mainpage-auto{
+    box-sizing: border-box;
+
+    width: 80%;
+    max-width: 1200px;
+}
+@media screen and (max-width: 750px){
+    .topan-mainpage-auto{
+        width: 87%;
+    }
+}
+
+.topan-center{
+    text-align: center;
+}
+img.topan-roundimage{
+    border-radius: 50%;
+}
