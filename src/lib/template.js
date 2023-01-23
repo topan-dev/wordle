@@ -1,3 +1,5 @@
+var pkgversion=require('./../../package.json').version;
+
 module.exports=(config,HTML)=>{
     return`
 <!DOCTYPE html>
@@ -6,6 +8,7 @@ module.exports=(config,HTML)=>{
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width">
         <title id="title">${config.title} - Wordle</title>
+        <link rel="shortcut icon" type="image/x-icon" href="/file/favicon.ico">
         <script src="/file/TopanUI/src/jquery.js"></script>
         <link rel="stylesheet" href="/file/TopanUI/topan.css">
         <script src="/file/TopanUI/topan.js"></script>
@@ -70,7 +73,7 @@ module.exports=(config,HTML)=>{
                 <a href="${config.user==null?"/login":"/i"}">
                     <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onlogin=="user"?"-showed":""}">
                         <i class="fa fa-solid fa-user"></i>
-                        <span>&nbsp;${config.user?"Login":config.user}</span>
+                        <span>&nbsp;${config.user==null?"Login":config.user}</span>
                     </span>
                 </a>
                 ${config.user!=null?`
@@ -95,7 +98,7 @@ module.exports=(config,HTML)=>{
                 <footer class="topan-footer">
                     <p></p>
                     <p style="text-align: center; color: #555; font-size: 12px;">
-                        Powered by <a href="//github.com/topan-dev/wordlesystem">Wordle System</a> alpha&nbsp;&nbsp;&nbsp;© 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>
+                        Powered by <a href="//github.com/topan-dev/wordlesystem">Wordle System</a> v${pkgversion} &nbsp;&nbsp;&nbsp;© 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>
                     </p>
                 </footer>
             </div>

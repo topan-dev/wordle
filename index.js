@@ -11,6 +11,17 @@ const Template=require('./src/lib/template.js');
 
 const fs=require('fs');
 
+var colors=require('colors');
+colors.setTheme({
+    warn: 'yellow',
+    error: 'red',
+    log: 'green',
+    user: 'white',
+    underline: 'underline',
+    italic: 'italic',
+    bold: 'bold'
+});
+
 var rules;
 fs.readFile("datas/rules.json",'utf8',(err,data)=>{
     rules=JSON.parse(data).rules;
@@ -20,8 +31,8 @@ fs.readFile("datas/rules.json",'utf8',(err,data)=>{
 // var multer=require('multer');
 // var upl=multer({dest: "upload"});
 
-// const User=require("./src/user.js"),
-//       Judger=require("./src/lib/judger.js");
+const User=require("./src/model/user.js"),
+      Judger=require("./src/lib/judger.js");
 
 app.all('*',(req,res,next)=>{
     // if(new Date().getTime()>pklastfix+600000){
@@ -40,15 +51,22 @@ app.all('*',(req,res,next)=>{
     // }
 });
 
-// app.get('/',require("./src/model/home.js"));
 app.get('/',(req,res)=>{
     ejs.renderFile("./src/templates/home.html",{rules: rules},(err,HTML)=>{
         res.send(Template({title: `Home`,
                            header: ``,
-                           user: null},HTML));
+                           user: User.userdataByReq(req).name
+                          },HTML));
     });
 });
 
+app.get('/file/*',(req,res)=>{
+    /* Params is not used because secondary folders
+       are prevented from appearing in static resources. */
+    var filename=req.url.substr(6);
+    res.sendFile("src/assets/"+filename,{root:__dirname},(err)=>{});
+})
+
 app.listen(8599,()=>{
-    console.log('[log] Port :8599 is opened.');
+    console.log('Port :8599 is opened.'.log);
 });

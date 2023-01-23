@@ -1,0 +1,61 @@
+.row:after{
+    clear: both;
+}
+.row:before,.row:after{
+    content: " ";
+    display: table;
+}
+.row{
+    margin: 0 auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+.column-one-second{
+    width: 50%;
+    float: left;
+}
+.column-one-third{
+    width: 33.3333333%;
+    float: left;
+}
+.column-two-third{
+    width: 66.6666667%;
+    float: left;
+}
+.column-one-fourth{
+    width: 25%;
+    float: left;
+}
+.column-one-fifth{
+    width: 20%;
+    float: left;
+}
+.column-four-fifth{
+    width: 80%;
+    float: left;
+}
+
+.pk-statuscard{
+    line-height: 8px;
+    text-align: center;
+}
+
+.user-headimage{
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    vertical-align: middle;
+}
+
+.result-green{
+    color: green;
+}
+.result-orange{
+    color: orange;
+}
+.result-grey{
+    color: grey;
+}
+
+.hide{
+    display: none;
+}
