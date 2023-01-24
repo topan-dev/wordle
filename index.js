@@ -22,10 +22,7 @@ colors.setTheme({
     bold: 'bold'
 });
 
-var rules;
-fs.readFile("datas/rules.json",'utf8',(err,data)=>{
-    rules=JSON.parse(data).rules;
-});
+var DB=require('./datas/main.json');
 
 // const path=require('path');
 // var multer=require('multer');
@@ -40,6 +37,7 @@ app.all('*',(req,res,next)=>{
     //         checkpkfinish(i,pkcodes[i].code);
     //     pklastfix=new Date().getTime();
     // }
+    req.body.startTime=new Date().getTime();
     res.set('Access-Control-Allow-Origin','*');
     res.set('Access-Control-Allow-Methods','GET');
     res.set('Access-Control-Allow-Headers','X-Requested-With, Content-Type');
@@ -52,13 +50,32 @@ app.all('*',(req,res,next)=>{
 });
 
 app.get('/',(req,res)=>{
-    ejs.renderFile("./src/templates/home.html",{rules: rules},(err,HTML)=>{
+    ejs.renderFile("./src/templates/home.html",{rules: DB.rules},(err,HTML)=>{
         res.send(Template({title: `Home`,
                            header: ``,
-                           user: User.userdataByReq(req).name
+                           user: User.userdataByReq(req).name,
+                           startTime: req.body.startTime
                           },HTML));
     });
 });
+app.get('/login',(req,res)=>{
+    ejs.renderFile("./src/templates/login.html",{rules: DB.rules},(err,HTML)=>{
+        res.send(Template({title: `Login`,
+                           header: ``,
+                           user: User.userdataByReq(req).name,
+                           startTime: req.body.startTime
+                          },HTML));
+    });
+});
+// app.get('/',(req,res)=>{
+//     ejs.renderFile("./src/templates/home.html",{rules: DB.rules},(err,HTML)=>{
+//         res.send(Template({title: `Home`,
+//                            header: ``,
+//                            user: User.userdataByReq(req).name,
+//                            startTime: req.body.startTime
+//                           },HTML));
+//     });
+// });
 
 app.get('/file/*',(req,res)=>{
     /* Params is not used because secondary folders

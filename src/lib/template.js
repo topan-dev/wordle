@@ -98,7 +98,9 @@ module.exports=(config,HTML)=>{
                 <footer class="topan-footer">
                     <p></p>
                     <p style="text-align: center; color: #555; font-size: 12px;">
-                        Powered by <a href="//github.com/topan-dev/wordlesystem">Wordle System</a> v${pkgversion} &nbsp;&nbsp;&nbsp;© 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>
+                    Worker in ${parseInt(new Date().getTime()-config.startTime)} ms&nbsp;&nbsp;&nbsp;
+                        Powered by <a href="//github.com/topan-dev/wordlesystem">Wordle System</a> v${pkgversion}&nbsp;&nbsp;&nbsp;
+                        © 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>
                     </p>
                 </footer>
             </div>
