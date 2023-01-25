@@ -11,6 +11,8 @@ const Template=require('./src/lib/template.js');
 
 const fs=require('fs');
 
+// const _=require('./locales/index.js');
+
 var colors=require('colors');
 colors.setTheme({
     warn: 'yellow',
@@ -54,28 +56,29 @@ app.get('/',(req,res)=>{
         res.send(Template({title: `Home`,
                            header: ``,
                            user: User.userdataByReq(req).name,
-                           startTime: req.body.startTime
+                           startTime: req.body.startTime,
+                           lang: "en"
                           },HTML));
     });
 });
 app.get('/login',(req,res)=>{
-    ejs.renderFile("./src/templates/login.html",{rules: DB.rules},(err,HTML)=>{
+    ejs.renderFile("./src/templates/login.html",{},(err,HTML)=>{
         res.send(Template({title: `Login`,
-                           header: ``,
+                           header: `<script src="/file/scripts/login.js"></script>`,
                            user: User.userdataByReq(req).name,
-                           startTime: req.body.startTime
+                           startTime: req.body.startTime,
+                           onlogin: true,
+                           lang: "en"
                           },HTML));
     });
 });
-// app.get('/',(req,res)=>{
-//     ejs.renderFile("./src/templates/home.html",{rules: DB.rules},(err,HTML)=>{
-//         res.send(Template({title: `Home`,
-//                            header: ``,
-//                            user: User.userdataByReq(req).name,
-//                            startTime: req.body.startTime
-//                           },HTML));
-//     });
-// });
+app.post('/login/try',(req,res)=>{
+    var login_name=req.body.name,
+        login_password=req.body.password;
+    res.cookie("wordle-uid",1,{maxAge: 1000*60*60*24});
+    res.cookie("wordle-cookie",1,{maxAge: 1000*60*60*24});
+    res.status(200).json({});
+});
 
 app.get('/file/*',(req,res)=>{
     /* Params is not used because secondary folders

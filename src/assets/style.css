@@ -59,3 +59,7 @@
 .hide{
     display: none;
 }
+
+input#login-name,input#login-password{
+    width: 200px;
+}

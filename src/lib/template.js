@@ -71,7 +71,7 @@ module.exports=(config,HTML)=>{
             </div>
             <div class="topan-header-right">
                 <a href="${config.user==null?"/login":"/i"}">
-                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onlogin=="user"?"-showed":""}">
+                    <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onlogin?"-showed":""}">
                         <i class="fa fa-solid fa-user"></i>
                         <span>&nbsp;${config.user==null?"Login":config.user}</span>
                     </span>
@@ -81,7 +81,7 @@ module.exports=(config,HTML)=>{
                         <i class="fa fa-solid fa-right-from-bracket"></i>
                     </span>
                     <a href="/i/settings">
-                        <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onsettings=="settings"?"-showed":""}">
+                        <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onsettings?"-showed":""}">
                             <i class="fa fa-solid fa-gear"></i>
                         </span>
                     </a>
@@ -98,8 +98,8 @@ module.exports=(config,HTML)=>{
                 <footer class="topan-footer">
                     <p></p>
                     <p style="text-align: center; color: #555; font-size: 12px;">
-                    Worker in ${parseInt(new Date().getTime()-config.startTime)} ms&nbsp;&nbsp;&nbsp;
-                        Powered by <a href="//github.com/topan-dev/wordlesystem">Wordle System</a> v${pkgversion}&nbsp;&nbsp;&nbsp;
+                        Worker in ${parseInt(new Date().getTime()-config.startTime)} ms&nbsp;&nbsp;&nbsp;
+                        Powered by <a href="//github.com/topan-dev/wordle">Wordle System</a> v${pkgversion}&nbsp;&nbsp;&nbsp;
                         © 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>
                     </p>
                 </footer>
