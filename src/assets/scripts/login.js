@@ -8,10 +8,6 @@ $(document).ready(()=>{
             (data,status)=>{
                 if(data.error!=undefined)alert(data.error);
                 else{
-                    setCookie("logined","true",1);
-                    setCookie("loginname",data.name,1);
-                    setCookie("loginchecker",data.checker,1);
-                    setCookie("loginid",data.id,1);
                     location.pathname="";
                 }
             }

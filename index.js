@@ -11,7 +11,7 @@ const Template=require('./src/lib/template.js');
 
 const fs=require('fs');
 
-// const _=require('./locales/index.js');
+const _=require('./locales/index.js');
 
 var colors=require('colors');
 colors.setTheme({
@@ -52,7 +52,7 @@ app.all('*',(req,res,next)=>{
 });
 
 app.get('/',(req,res)=>{
-    ejs.renderFile("./src/templates/home.html",{rules: DB.rules},(err,HTML)=>{
+    ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: _["en"]},(err,HTML)=>{
         res.send(Template({title: `Home`,
                            header: ``,
                            user: User.userdataByReq(req).name,
@@ -62,13 +62,13 @@ app.get('/',(req,res)=>{
     });
 });
 app.get('/login',(req,res)=>{
-    ejs.renderFile("./src/templates/login.html",{},(err,HTML)=>{
+    ejs.renderFile("./src/templates/login.html",{_: _["zh"]},(err,HTML)=>{
         res.send(Template({title: `Login`,
                            header: `<script src="/file/scripts/login.js"></script>`,
                            user: User.userdataByReq(req).name,
                            startTime: req.body.startTime,
                            onlogin: true,
-                           lang: "en"
+                           lang: "zh"
                           },HTML));
     });
 });

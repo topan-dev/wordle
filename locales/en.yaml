@@ -1,0 +1,11 @@
+contests: Contests
+pk_onheader: 1v1 PK
+ranking: Ranking
+application: Application
+login: Login
+register: Register
+
+login_username: Your Username
+login_password: Your Password
+
+rules_descriptions: Rules descriptions

@@ -1,6 +1,9 @@
 var pkgversion=require('./../../package.json').version;
 
+const Lang=require('./../../locales/index.js');
+
 module.exports=(config,HTML)=>{
+    var _=Lang[config.lang];
     return`
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -47,25 +50,25 @@ module.exports=(config,HTML)=>{
                 <a href="/contests">
                     <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.oncontests?"-showed":""}">
                         <i class="fa fa-solid fa-fire"></i>
-                        <span>&nbsp;Contests</span>
+                        <span>&nbsp;${_('contests')}</span>
                     </span>
                 </a>
                 <a href="/pk">
                     <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onpk?"-showed":""}">
                         <i class="fa fa-solid fa-paper-plane"></i>
-                        <span>&nbsp;1v1 PK</span>
+                        <span>&nbsp;${_('pk_onheader')}</span>
                     </span>
                 </a>
                 <a href="/ranking">
                     <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onranking?"-showed":""}">
                         <i class="fa fa-solid fa-ranking-star"></i>
-                        <span>&nbsp;Ranking</span>
+                        <span>&nbsp;${_('ranking')}</span>
                     </span>
                 </a>
                 <a href="/app">
                     <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onapps?"-showed":""}">
                         <i class="fa fa-solid fa-bars"></i>
-                        <span>&nbsp;Application</span>
+                        <span>&nbsp;${_('application')}</span>
                     </span>
                 </a>
             </div>
@@ -73,7 +76,7 @@ module.exports=(config,HTML)=>{
                 <a href="${config.user==null?"/login":"/i"}">
                     <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onlogin?"-showed":""}">
                         <i class="fa fa-solid fa-user"></i>
-                        <span>&nbsp;${config.user==null?"Login":config.user}</span>
+                        <span>&nbsp;${config.user==null?_('login'):config.user}</span>
                     </span>
                 </a>
                 ${config.user!=null?`
@@ -99,7 +102,7 @@ module.exports=(config,HTML)=>{
                     <p></p>
                     <p style="text-align: center; color: #555; font-size: 12px;">
                         Worker in ${parseInt(new Date().getTime()-config.startTime)} ms&nbsp;&nbsp;&nbsp;
-                        Powered by <a href="//github.com/topan-dev/wordle">Wordle System</a> v${pkgversion}&nbsp;&nbsp;&nbsp;
+                        Powered by <a href="https://github.com/topan-dev/wordle">Wordle</a> v${pkgversion}&nbsp;&nbsp;&nbsp;
                         © 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>
                     </p>
                 </footer>
