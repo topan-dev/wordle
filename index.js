@@ -10,8 +10,6 @@ app.use(require('cookie-parser')());
 const ejs=require('ejs');
 const Template=require('./src/lib/template.js');
 
-const fs=require('fs');
-
 const _=require('./locales/index.js');
 
 var colors=require('colors');
@@ -31,8 +29,7 @@ var DB=require('./datas/main.json');
 // var multer=require('multer');
 // var upl=multer({dest: "upload"});
 
-const User=require("./src/model/user.js"),
-      Judger=require("./src/lib/judger.js");
+const User=require("./src/model/user.js");
 
 app.all('*',(req,res,next)=>{
     // if(new Date().getTime()>pklastfix+600000){
@@ -62,7 +59,7 @@ app.all('*',(req,res,next)=>{
 
 app.get('/',(req,res)=>{
     ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: req.body._},(err,HTML)=>{
-        res.send(Template({title: `Home`,
+        res.send(Template({title: `${req.body._('home')}`,
                            header: ``,
                            user: User.userdataByReq(req).name,
                            startTime: req.body.startTime,
@@ -70,35 +67,8 @@ app.get('/',(req,res)=>{
                           },HTML));
     });
 });
-app.get('/login',(req,res)=>{
-    if(User.checkloginByReq(req)){
-        res.redirect("/");
-        return;
-    }
-    ejs.renderFile("./src/templates/login.html",{_: req.body._},(err,HTML)=>{
-        res.send(Template({title: `Login`,
-                           header: `<script src="/file/scripts/login.js"></script>`,
-                           user: User.userdataByReq(req).name,
-                           startTime: req.body.startTime,
-                           onlogin: true,
-                           _: req.body._
-                          },HTML));
-    });
-});
-app.post('/login/try',(req,res)=>{
-    var login_name=req.body.name,
-        login_password=req.body.password;
-    var result=User.checkloginByPassword(login_password,login_name);
-    if(result==null)
-        res.status(200).json({error: req.body._('cannot_find_user')});
-    else if(result){
-        var uid=User.userdataByName(login_name).uid;
-        res.cookie("wordle-uid",uid,{maxAge: 1000*60*60*24});
-        res.cookie("wordle-cookie",User.Encode(login_password,uid),{maxAge: 1000*60*60*24});
-        res.status(200).json({});
-    }
-    else res.status(200).json({error: req.body._('password_error')});
-});
+app.use('/login',require('./src/api/login.js'));
+app.use('/i',require('./src/api/i.js'));
 
 app.get('/file/*',(req,res)=>{
     /* Params is not used because secondary folders

@@ -33,6 +33,14 @@ const checkloginByReq=(req)=>{
     else return encode(cookie)==data.checker;
 };
 
+function idByUID(uid){
+    var datas=require('../../datas/main.json').users;
+    var i=0;
+    while(i<datas.length&&datas[i].uid!=uid)i++;
+    if(i==datas.length)return -1;
+    else return i;
+}
+
 function userdataByUID(uid){
     var datas=require('../../datas/main.json').users;
     var i=0;
@@ -56,6 +64,7 @@ module.exports={encode,
                 Encode,
                 checkloginByPassword,
                 checkloginByReq,
+                idByUID,
                 userdataByUID,
                 userdataByName,
                 userdataByReq

@@ -1,13 +1,27 @@
+home: 首页
 contests: 比赛
 pk_onheader: 单挑竞技场
 ranking: 排行
 application: 应用广场
 login: 登录
 register: 注册
+settings: 设置
 
+# Login
 login_username: 输入用户名
 login_password: 输入密码
 cannot_find_user: 找不到这个用户。
 password_error: 密码错误。
+
+# Settings
+change_headimage: 修改头像
+change_password: 修改密码
+confirm: 确定
+# Change Password
+old_password: 请输入原密码
+new_password: 请输入新密码
+repeat_password: 请确认新密码
+two_passwords_are_diffrent: 新密码确认失败。
+password_change_success: 修改成功！
 
 rules_descriptions: 规则描述

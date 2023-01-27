@@ -15,6 +15,15 @@ module.exports=(config,HTML)=>{
         <script src="/file/TopanUI/topan.js"></script>
         <link rel="stylesheet" href="/file/style.css">
         <script>
+            function getCookie(name){
+                var cookieArr=document.cookie.split(";");
+                for(var i=0;i<cookieArr.length;i++){
+                    var cookiePair=cookieArr[i].split("=");
+                    if(name==cookiePair[0].trim())
+                        return decodeURIComponent(cookiePair[1]);
+                }
+                return null;
+            }
             function setCookie(name,value,live){
                 var cookie=name+"="+encodeURIComponent(value)+"; path=/";
                 if(typeof daysToLive==="number"&&daysToLive!=0){
