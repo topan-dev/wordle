@@ -1,9 +1,9 @@
 {
     "users": [
         {
-            "id": 0,
+            "uid": 0,
             "name": "System",
-            "checker": "42122ad17b4bcf8b594ebfbd25f8be6d2ff592e2c87717f26e24b8bdbb2212915c461bc23199b141717d537ce273a3cf",
+            "checker": "e9cd58da070b89bc25729f56d91be07b267f3717636297a4c9f0dedcca2eae3d6247b423fff517699f35d344b7195c70",
             "admin": true,
             "data": {
                 "score": {

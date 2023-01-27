@@ -7,5 +7,7 @@ register: Register
 
 login_username: Your Username
 login_password: Your Password
+cannot_find_user: This user cannot be found.
+password_error: Password error.
 
 rules_descriptions: Rules descriptions

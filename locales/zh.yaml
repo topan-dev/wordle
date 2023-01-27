@@ -7,5 +7,7 @@ register: 注册
 
 login_username: 输入用户名
 login_password: 输入密码
+cannot_find_user: 找不到这个用户。
+password_error: 密码错误。
 
 rules_descriptions: 规则描述

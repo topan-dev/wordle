@@ -1,9 +1,7 @@
 var pkgversion=require('./../../package.json').version;
 
-const Lang=require('./../../locales/index.js');
-
 module.exports=(config,HTML)=>{
-    var _=Lang[config.lang];
+    var _=config._;
     return`
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -17,19 +15,17 @@ module.exports=(config,HTML)=>{
         <script src="/file/TopanUI/topan.js"></script>
         <link rel="stylesheet" href="/file/style.css">
         <script>
-            function setCookie(name,value,daysToLive){
+            function setCookie(name,value,live){
                 var cookie=name+"="+encodeURIComponent(value)+"; path=/";
                 if(typeof daysToLive==="number"&&daysToLive!=0){
-                    cookie+="; max-age="+(daysToLive*24*60*60);
+                    cookie+="; max-age="+live;
                 }
                 document.cookie=cookie;
             };
             $(document).ready(()=>{
                 $("#system-logout").click(()=>{
-                    setCookie("logined","",0);
-                    setCookie("loginname","",0);
-                    setCookie("loginchecker","",0);
-                    setCookie("loginid","",0);
+                    setCookie("wordle-uid","",0);
+                    setCookie("wordle-cookie","",0);
                     location.pathname="";
                 })
             });

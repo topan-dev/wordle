@@ -2,14 +2,12 @@ $(document).ready(()=>{
     $("#user-login").click(()=>{
         $.post("/login/try",
             {
-                name: $('#login-name')[0].value,
-                password: $('#login-password')[0].value
+                name: $('#login-name').val(),
+                password: $('#login-password').val()
             },
             (data,status)=>{
-                if(data.error!=undefined)alert(data.error);
-                else{
-                    location.pathname="";
-                }
+                if(data.error!=undefined)$('#login-error').text(data.error);
+                else location.pathname="";
             }
         );
     });

@@ -44,50 +44,66 @@ app.all('*',(req,res,next)=>{
     if(!_.langs.includes(req.cookies['wordle-lang']))
         req.cookies['wordle-lang']='en',
         res.cookie("wordle-lang",'en');
+    req.body._=_[req.cookies['wordle-lang']];
+    if(User.checkloginByReq(req))
+        req.uid=req.cookies['wordle-uid'];
+    else res.cookie("wordle-uid",""),
+         res.cookie("wordle-cookie","");
     res.set('Access-Control-Allow-Origin','*');
     res.set('Access-Control-Allow-Methods','GET');
     res.set('Access-Control-Allow-Headers','X-Requested-With, Content-Type');
     if ('OPTIONS'==req.method)return res.send(200);
     // if (checklogin(req) || req.url == '/' || req.url == '/login' || req.url == '/login/try' || !(req.url.split("/f/")[0])) {
-        next();
+    next();
     // } else {
     //     res.redirect('/login');
     // }
 });
 
 app.get('/',(req,res)=>{
-    ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: _[req.cookies["wordle-lang"]]},(err,HTML)=>{
+    ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: req.body._},(err,HTML)=>{
         res.send(Template({title: `Home`,
                            header: ``,
                            user: User.userdataByReq(req).name,
                            startTime: req.body.startTime,
-                           lang: req.cookies["wordle-lang"]
+                           _: req.body._
                           },HTML));
     });
 });
 app.get('/login',(req,res)=>{
-    ejs.renderFile("./src/templates/login.html",{_: _[req.cookies["wordle-lang"]]},(err,HTML)=>{
+    if(User.checkloginByReq(req)){
+        res.redirect("/");
+        return;
+    }
+    ejs.renderFile("./src/templates/login.html",{_: req.body._},(err,HTML)=>{
         res.send(Template({title: `Login`,
                            header: `<script src="/file/scripts/login.js"></script>`,
                            user: User.userdataByReq(req).name,
                            startTime: req.body.startTime,
                            onlogin: true,
-                           lang: req.cookies["wordle-lang"]
+                           _: req.body._
                           },HTML));
     });
 });
 app.post('/login/try',(req,res)=>{
     var login_name=req.body.name,
         login_password=req.body.password;
-    res.cookie("wordle-uid",1,{maxAge: 1000*60*60*24});
-    res.cookie("wordle-cookie",1,{maxAge: 1000*60*60*24});
-    res.status(200).json({});
+    var result=User.checkloginByPassword(login_password,login_name);
+    if(result==null)
+        res.status(200).json({error: req.body._('cannot_find_user')});
+    else if(result){
+        var uid=User.userdataByName(login_name).uid;
+        res.cookie("wordle-uid",uid,{maxAge: 1000*60*60*24});
+        res.cookie("wordle-cookie",User.Encode(login_password,uid),{maxAge: 1000*60*60*24});
+        res.status(200).json({});
+    }
+    else res.status(200).json({error: req.body._('password_error')});
 });
 
 app.get('/file/*',(req,res)=>{
     /* Params is not used because secondary folders
        are prevented from appearing in static resources. */
-    var filename=req.url.substr(6);
+    var filename=req.params[0];
     res.sendFile("src/assets/"+filename,{root:__dirname},(err)=>{});
 });
 
