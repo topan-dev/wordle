@@ -97,6 +97,10 @@ module.exports=(config,HTML)=>{
                 <footer class="topan-footer">
                     <p></p>
                     <p style="text-align: center; color: #555; font-size: 12px;">
+                        <i class="fa fa-solid fa-earth-americas"></i>
+                        <a href="javascript:setCookie('wordle-lang','zh',0)">中文</a> |
+                        <a href="javascript:setCookie('wordle-lang','en',0)">English</a> |
+                        <a href="javascript:setCookie('wordle-lang','ko',0)">日本語</a>&nbsp;&nbsp;&nbsp;
                         Worker in ${parseInt(new Date().getTime()-config.startTime)} ms&nbsp;&nbsp;&nbsp;
                         Powered by <a href="https://github.com/topan-dev/wordle">Wordle</a> v${pkgversion}&nbsp;&nbsp;&nbsp;
                         © 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>
