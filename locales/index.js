@@ -17,5 +17,6 @@ function main(lang,key){
 module.exports={
     en: (key)=>{return main('en',key)},
     zh: (key)=>{return main('zh',key)},
-    ko: (key)=>{return main('ko',key)}
+    ko: (key)=>{return main('ko',key)},
+    langs: langs
 };

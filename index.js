@@ -5,6 +5,7 @@ app.use(cors());
 const bodyParser=require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
+app.use(require('cookie-parser')());
 
 const ejs=require('ejs');
 const Template=require('./src/lib/template.js');
@@ -40,6 +41,9 @@ app.all('*',(req,res,next)=>{
     //     pklastfix=new Date().getTime();
     // }
     req.body.startTime=new Date().getTime();
+    if(!_.langs.includes(req.cookies['wordle-lang']))
+        req.cookies['wordle-lang']='en',
+        res.cookie("wordle-lang",'en');
     res.set('Access-Control-Allow-Origin','*');
     res.set('Access-Control-Allow-Methods','GET');
     res.set('Access-Control-Allow-Headers','X-Requested-With, Content-Type');
@@ -52,23 +56,23 @@ app.all('*',(req,res,next)=>{
 });
 
 app.get('/',(req,res)=>{
-    ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: _["en"]},(err,HTML)=>{
+    ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: _[req.cookies["wordle-lang"]]},(err,HTML)=>{
         res.send(Template({title: `Home`,
                            header: ``,
                            user: User.userdataByReq(req).name,
                            startTime: req.body.startTime,
-                           lang: "en"
+                           lang: req.cookies["wordle-lang"]
                           },HTML));
     });
 });
 app.get('/login',(req,res)=>{
-    ejs.renderFile("./src/templates/login.html",{_: _["zh"]},(err,HTML)=>{
+    ejs.renderFile("./src/templates/login.html",{_: _[req.cookies["wordle-lang"]]},(err,HTML)=>{
         res.send(Template({title: `Login`,
                            header: `<script src="/file/scripts/login.js"></script>`,
                            user: User.userdataByReq(req).name,
                            startTime: req.body.startTime,
                            onlogin: true,
-                           lang: "zh"
+                           lang: req.cookies["wordle-lang"]
                           },HTML));
     });
 });
@@ -85,8 +89,14 @@ app.get('/file/*',(req,res)=>{
        are prevented from appearing in static resources. */
     var filename=req.url.substr(6);
     res.sendFile("src/assets/"+filename,{root:__dirname},(err)=>{});
-})
+});
 
 app.listen(8599,()=>{
     console.log('Port :8599 is opened.'.log);
 });
+
+/*
+ELO Rating: https://blog.csdn.net/qq100440110/article/details/70240824
+Git: https://molmin.github.io/blog/article?id=16eb41280d1fb970c8705ae637a094c7
+Crypto: https://blog.csdn.net/loeyln/article/details/118254996
+*/
