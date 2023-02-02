@@ -8,9 +8,9 @@ A multiparty interactive game on web - Wordle.
 
 You need to guess a word, and we will give each letter a color, and the colors must be red, yellow and green. Grey means that this letter isn't in the answer word. Yellow means that this letter appears in the answer word but not on its right position. Green means that you guess the letter on its right position.
 
-例如，答案是 apple，你猜了 pears，由于 p,e,a 均在答案中出现过并且不在正确的位置上，所以将会显示 <span style="color: orange;">pea</span><span style="color: gery;">rs</span>。如果你猜了 paper，就会显示 <span style="color: orange;">pa</span><span style="color: green;">p</span><span style="color: orange;">e</span><span style="color: gery;">r</span>；如果你猜了 paple，那么会显示 <span style="color: orange;">pa</span><span style="color: green;">ple</span>。
+例如，答案是 apple，你猜了 pears，由于 p,e,a 均在答案中出现过并且不在正确的位置上，所以将会显示橙橙橙灰灰。如果你猜了 paper，就会显示橙橙绿橙灰；如果你猜了 paple，那么会显示橙橙绿绿绿。
 
-For example, the answer is 'apple', and you give the word 'pears'. Because 'p', 'e', 'a' is in the answer and not in the correct position, so it'll show '<span style="color: orange;">pea</span><span style="color: grey;">rs</span>'. If you give the word 'paper', it'll be '<span style="color: orange;">pa</span><span style="color: green;">p</span><span style="color: orange;">e</span><span style="color: grey;">r</span>'. If you give the word 'paple', it'll be '<span style="color: orange;">pa</span><span style="color: green;">ple</span>'.
+For example, the answer is 'apple', and you give the word 'pears'. Because 'p', 'e', 'a' is in the answer and not in the correct position, so it'll show orange-orange-orange-grey-grey. If you give the word 'paper', it'll be orange-orange-green-orange-grey. If you give the word 'paple', it'll be orange-orange-green-green-green.
 
 如上所述的是标准规则（Standard Rule）。除此之外，我们还提供一些更难的、有趣的规则供您使用。
 
