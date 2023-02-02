@@ -58,6 +58,8 @@ app.all('*',(req,res,next)=>{
     // }
 });
 
+app.use("/file",express.static(path.join(__dirname,'src/assets')));
+
 app.get('/',(req,res)=>{
     ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: req.body._},(err,HTML)=>{
         res.send(Template({title: `${req.body._('home')}`,
@@ -68,16 +70,9 @@ app.get('/',(req,res)=>{
                           },HTML));
     });
 });
+
 app.use('/login',require('./src/api/login.js'));
 app.use('/i',require('./src/api/i.js'));
-
-// app.get('/file/*',(req,res)=>{
-//     /* Params is not used because secondary folders
-//        are prevented from appearing in static resources. */
-//     var filename=req.params[0];
-//     res.sendFile("src/assets/"+filename,{root:__dirname},(err)=>{});
-// });
-app.use("/file",express.static(path.join(__dirname,'src/assets')));
 
 app.listen(8599,()=>{
     console.log('Port :8599 is opened.'.log);

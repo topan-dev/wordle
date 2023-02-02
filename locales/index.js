@@ -1,7 +1,7 @@
 const yaml=require('js-yaml');
 const fs=require('fs');
 
-var langs=['en','zh','ko'];
+var langs=['en','zh','jp'];
 var datas={};
 
 langs.forEach((lang)=>{
@@ -17,6 +17,6 @@ function main(lang,key){
 module.exports={
     en: (key)=>{return main('en',key)},
     zh: (key)=>{return main('zh',key)},
-    ko: (key)=>{return main('ko',key)},
+    jp: (key)=>{return main('jp',key)},
     langs: langs
 };
