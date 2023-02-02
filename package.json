@@ -6,7 +6,23 @@
   "scripts": {
     "start": "node index.js"
   },
-  "author": "milmon",
+  "author": {
+    "name": "Milmon",
+    "email": "milmon@qq.com",
+    "GitHub": "https://github.com/molmin"
+  },
+  "contributors": [
+    {
+      "name": "wxuyuan",
+      "email": "wxy2010wxy0812@163.com",
+      "GitHub": "https://github.com/wxuyuan"
+    },
+    {
+      "name": "hexuben",
+      "email": "1983778435@qq.com",
+      "GitHub": "https://github.com/hexuben"
+    }
+  ],
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "body-parser": "^1.20.1",
@@ -28,7 +44,8 @@
     "wordle"
   ],
   "bugs": {
-    "url": "https://github.com/topan-dev/wordle/issues"
+    "url": "https://github.com/topan-dev/wordle/issues",
+    "email": "milmon@qq.com"
   },
   "homepage": "https://github.com/topan-dev/wordle#readme"
 }

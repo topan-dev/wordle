@@ -2,6 +2,7 @@ const express=require('express'),
       app=express();
 const cors=require('cors');
 app.use(cors());
+const path=require('path');
 const bodyParser=require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
@@ -70,12 +71,13 @@ app.get('/',(req,res)=>{
 app.use('/login',require('./src/api/login.js'));
 app.use('/i',require('./src/api/i.js'));
 
-app.get('/file/*',(req,res)=>{
-    /* Params is not used because secondary folders
-       are prevented from appearing in static resources. */
-    var filename=req.params[0];
-    res.sendFile("src/assets/"+filename,{root:__dirname},(err)=>{});
-});
+// app.get('/file/*',(req,res)=>{
+//     /* Params is not used because secondary folders
+//        are prevented from appearing in static resources. */
+//     var filename=req.params[0];
+//     res.sendFile("src/assets/"+filename,{root:__dirname},(err)=>{});
+// });
+app.use("/file",express.static(path.join(__dirname,'src/assets')));
 
 app.listen(8599,()=>{
     console.log('Port :8599 is opened.'.log);
