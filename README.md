@@ -18,11 +18,11 @@ As mentioned above is Standard Rule. In addition, we also provide some more diff
 
 ### 文档 Docs
 
-[语言包文档 Language Packages](/topan-dev/wordle/blob/master/docs/locales.md)
+[语言包文档 Language Packages](/docs/locales.md)
 
 ### 贡献者 Contributors
 
-[详细信息 Details](/topan-dev/wordle/graphs/contributors)
+[详细信息 Details](https://github.com/topan-dev/wordle/graphs/contributors)
 
 ### 联系我们 Contact us
 
