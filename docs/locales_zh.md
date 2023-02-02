@@ -1,4 +1,4 @@
-[English](locales_zh.md) | **简体中文** | [返回](..)
+[English](locales.md) | **简体中文** | [返回](../README.md)
 
 为了修改方便，语言包使用 yaml 存储，而不是 json。
 
@@ -9,7 +9,7 @@
 
 例如：
 
-```markdown
+```yaml
 home: Home
 login: Login
 register: Register

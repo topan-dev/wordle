@@ -1,7 +1,7 @@
 {
   "name": "wordle",
   "version": "1.0.0-alpha",
-  "description": "A small game - Wordle.",
+  "description": "A multiparty interactive game on web - Wordle. 一款网页版多人交互小游戏 Wordle。",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
