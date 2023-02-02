@@ -7,8 +7,10 @@ const User=require("./../model/user.js");
 const Template=require('./../lib/template.js');
 const _=require('./../../locales/index.js');
 
-router.all('/',(req,res,next)=>{
-    if(!User.checkloginByReq(req))res.redirect("/login");
+const validators=require('./../lib/validator.js');
+
+router.all('*',(req,res,next)=>{
+    if(!req.logined)res.redirect("/login");
     else next();
 })
 router.get('/',(req,res)=>{
@@ -34,11 +36,18 @@ router.post('/changepassword',(req,res)=>{
         res.status(200).json({error: req.body._('password_error')});
         return;
     }
+    if(!validators.password(req.body.new)){
+        res.status(200).json({error: req.body._('password_validator_failed')});
+        return;
+    }
     var newchecker=User.encode(User.Encode(req.body.new,req.uid));
-    var datas=require('./../../datas/main.json');
+    var datas=require('./../../data/main.json');
     datas.users[User.idByUID(req.uid)].checker=newchecker;
-    fs.writeFileSync('datas/main.json',JSON.stringify(datas));
+    fs.writeFileSync('data/main.json',JSON.stringify(datas));
     res.status(200).json({message:req.body._('password_change_success')});
+});
+router.get('/headimage',(req,res)=>{
+    res.redirect(`/user/${req.uid}/headimage`);
 });
 
 module.exports=router;

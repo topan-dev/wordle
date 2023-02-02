@@ -45,6 +45,11 @@
     width: 20px; height: 20px;
     vertical-align: middle;
 }
+.user-headimage-large{
+    border-radius: 50%;
+    width: 25px; height: 25px;
+    vertical-align: middle;
+}
 
 .result-green{
     color: green;

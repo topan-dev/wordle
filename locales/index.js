@@ -2,10 +2,12 @@ const yaml=require('js-yaml');
 const fs=require('fs');
 
 var langs=['en','zh','jp'];
-var datas={};
+var datas={},selector=``;
 
 langs.forEach((lang)=>{
     datas[lang]=yaml.load(fs.readFileSync(`./locales/${lang}.yaml`,'utf8'));
+    if(selector.length>0)selector+=` | `;
+    selector+=`<a href="javascript:setCookie('wordle-lang','${lang}',0)">${datas[lang]['_self']}</a>`;
 });
 
 function main(lang,key){
@@ -18,5 +20,6 @@ module.exports={
     en: (key)=>{return main('en',key)},
     zh: (key)=>{return main('zh',key)},
     jp: (key)=>{return main('jp',key)},
-    langs: langs
+    langs: langs,
+    selector: selector
 };

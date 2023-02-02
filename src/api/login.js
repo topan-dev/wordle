@@ -7,7 +7,7 @@ const Template=require('./../lib/template.js');
 const _=require('./../../locales/index.js');
 
 router.get('/',(req,res)=>{
-    if(User.checkloginByReq(req)){
+    if(req.logined){
         res.redirect("/");
         return;
     }

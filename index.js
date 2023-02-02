@@ -10,6 +10,8 @@ app.use(require('cookie-parser')());
 
 const ejs=require('ejs');
 const Template=require('./src/lib/template.js');
+const format=require('string-format');
+format.extend(String.prototype);
 
 const _=require('./locales/index.js');
 
@@ -24,7 +26,7 @@ colors.setTheme({
     bold: 'bold'
 });
 
-var DB=require('./datas/main.json');
+var DB=require('./data/main.json');
 
 // const path=require('path');
 // var multer=require('multer');
@@ -44,9 +46,11 @@ app.all('*',(req,res,next)=>{
         res.cookie("wordle-lang",'en');
     req.body._=_[req.cookies['wordle-lang']];
     if(User.checkloginByReq(req))
-        req.uid=req.cookies['wordle-uid'];
+        req.uid=req.cookies['wordle-uid'],
+        req.logined=true;
     else res.cookie("wordle-uid",""),
-         res.cookie("wordle-cookie","");
+         res.cookie("wordle-cookie",""),
+         req.logined=false;
     res.set('Access-Control-Allow-Origin','*');
     res.set('Access-Control-Allow-Methods','GET');
     res.set('Access-Control-Allow-Headers','X-Requested-With, Content-Type');
@@ -73,6 +77,7 @@ app.get('/',(req,res)=>{
 
 app.use('/login',require('./src/api/login.js'));
 app.use('/i',require('./src/api/i.js'));
+app.use('/user/:uid',require('./src/api/user.js'));
 
 app.listen(8599,()=>{
     console.log('Port :8599 is opened.'.log);

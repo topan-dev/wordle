@@ -18,7 +18,7 @@ const nulluserdata={
 };
 
 const checkloginByPassword=(password,username)=>{
-    var datas=require('../../datas/main.json').users;
+    var datas=require('../../data/main.json').users;
     var i=0;
     while(i<datas.length&&datas[i].name!=username)i++;
     if(i==datas.length)return null;
@@ -34,7 +34,7 @@ const checkloginByReq=(req)=>{
 };
 
 function idByUID(uid){
-    var datas=require('../../datas/main.json').users;
+    var datas=require('../../data/main.json').users;
     var i=0;
     while(i<datas.length&&datas[i].uid!=uid)i++;
     if(i==datas.length)return -1;
@@ -42,14 +42,14 @@ function idByUID(uid){
 }
 
 function userdataByUID(uid){
-    var datas=require('../../datas/main.json').users;
+    var datas=require('../../data/main.json').users;
     var i=0;
     while(i<datas.length&&datas[i].uid!=uid)i++;
     if(i==datas.length)return nulluserdata;
     else return datas[i];
 }
 function userdataByName(name){
-    var datas=require('../../datas/main.json').users;
+    var datas=require('../../data/main.json').users;
     var i=0;
     while(i<datas.length&&datas[i].name!=name)i++;
     if(i==datas.length)return nulluserdata;
@@ -62,6 +62,7 @@ function userdataByReq(req){
 
 module.exports={encode,
                 Encode,
+                nulluserdata,
                 checkloginByPassword,
                 checkloginByReq,
                 idByUID,

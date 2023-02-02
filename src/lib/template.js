@@ -1,4 +1,5 @@
-var pkgversion=require('./../../package.json').version;
+const pkgversion=require('./../../package.json').version;
+const langselector=require('./../../locales/index.js').selector;
 
 module.exports=(config,HTML)=>{
     var _=config._;
@@ -80,7 +81,11 @@ module.exports=(config,HTML)=>{
             <div class="topan-header-right">
                 <a href="${config.user==null?"/login":"/i"}">
                     <span class="topan-button-ordinary topan-button-commonly topan-button-header-block${config.onlogin?"-showed":""}">
-                        <i class="fa fa-solid fa-user"></i>
+                        ${config.user==null?`
+                            <i class="fa fa-solid fa-user"></i>
+                        `:`
+                            <img class="user-headimage-large" src="/i/headimage">
+                        `}
                         <span>&nbsp;${config.user==null?_('login'):config.user}</span>
                     </span>
                 </a>
@@ -106,10 +111,7 @@ module.exports=(config,HTML)=>{
                 <footer class="topan-footer">
                     <p></p>
                     <p style="text-align: center; color: #555; font-size: 12px;">
-                        <i class="fa fa-solid fa-earth-americas"></i>
-                        <a href="javascript:setCookie('wordle-lang','zh',0)">中文</a> |
-                        <a href="javascript:setCookie('wordle-lang','en',0)">English</a> |
-                        <a href="javascript:setCookie('wordle-lang','ko',0)">日本語</a>&nbsp;&nbsp;&nbsp;
+                        <i class="fa fa-solid fa-earth-americas"></i> ${langselector}&nbsp;&nbsp;&nbsp;
                         Worker in ${parseInt(new Date().getTime()-config.startTime)} ms&nbsp;&nbsp;&nbsp;
                         Powered by <a href="https://github.com/topan-dev/wordle">Wordle</a> v${pkgversion}&nbsp;&nbsp;&nbsp;
                         © 2023 <a href="https://github.com/topan-dev/">Topan Development Group</a>

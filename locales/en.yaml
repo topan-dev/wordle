@@ -1,3 +1,5 @@
+_self: English
+
 home: Home
 contests: Contests
 pk_onheader: 1v1 PK
@@ -22,6 +24,7 @@ old_password: Old Password
 new_password: New Password
 repeat_password: Repeat Password
 two_passwords_are_diffrent: The two passwords are diffrent.
+password_validator_failed: Password validator failed.
 password_change_success: Change success!
 
 rules_descriptions: Rules descriptions
