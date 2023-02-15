@@ -6,6 +6,17 @@ const ejs=require('ejs');
 const Template=require('./../lib/template.js');
 const _=require('./../../locales/index.js');
 
+var colors=require('colors');
+colors.setTheme({
+    warn: 'yellow',
+    error: 'red',
+    log: 'green',
+    user: 'white',
+    underline: 'underline',
+    bold: 'bold',
+    head: 'grey'
+});
+
 router.get('/',(req,res)=>{
     if(req.logined){
         res.redirect("/");
@@ -32,6 +43,7 @@ router.post('/try',(req,res)=>{
         res.cookie("wordle-uid",uid,{maxAge: 1000*60*60*24});
         res.cookie("wordle-cookie",User.Encode(login_password,uid),{maxAge: 1000*60*60*24});
         res.status(200).json({});
+        console.log('      user | '.head+login_name.white.bold+` #${uid}`.grey+` logined`.log);
     }
     else res.status(200).json({error: req.body._('password_error')});
 });

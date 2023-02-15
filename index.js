@@ -23,7 +23,8 @@ colors.setTheme({
     user: 'white',
     underline: 'underline',
     italic: 'italic',
-    bold: 'bold'
+    bold: 'bold',
+    head: 'grey'
 });
 
 var DB=require('./data/main.json');
@@ -63,6 +64,9 @@ app.all('*',(req,res,next)=>{
 });
 
 app.use("/file",express.static(path.join(__dirname,'src/assets')));
+app.get('/robots.txt',(req,res)=>{
+    res.sendFile("src/assets/robots.txt",{root:__dirname},(err)=>{});
+});
 
 app.get('/',(req,res)=>{
     ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: req.body._},(err,HTML)=>{
@@ -80,7 +84,7 @@ app.use('/i',require('./src/api/i.js'));
 app.use('/user/:uid',require('./src/api/user.js'));
 
 app.listen(8599,()=>{
-    console.log('Port :8599 is opened.'.log);
+    console.log('    system | '.head+'Port :8599 is opened'.log);
 });
 
 /*
