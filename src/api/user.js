@@ -14,7 +14,7 @@ router.all('*',(req,res,next)=>{
         return;
     }
     next();
-})
+});
 router.get('/headimage',(req,res)=>{
     var data=req.body.userdata.headimage;
     if(data.type=='default')

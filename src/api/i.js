@@ -12,7 +12,7 @@ const validators=require('./../lib/validator.js');
 router.all('*',(req,res,next)=>{
     if(!req.logined)res.redirect("/login");
     else next();
-})
+});
 router.get('/',(req,res)=>{
     res.redirect(`/user/${req.uid}`);
 });

@@ -26,4 +26,14 @@ repeat_password: 请确认新密码
 two_passwords_are_diffrent: 新密码确认失败。
 password_change_success: 修改成功！
 
+# PK
+pk_code: PK 邀请码
+# Create Room
+create_pkroom: 创建房间
+create_tip: 若您想邀请他人，请选择一个比赛规则后配置房间信息即可生成邀请码。注意邀请码的有效期为 {time} 分钟，有效期内无人加入游戏则失效。而生成邀请码后 {coldtime} 分钟内不能生成新的邀请码。
+create_choose_rule: 请选择一个规则：
+# Join Room
+join_pkroom: 加入房间
+join_tip: 若您收到他人的邀请，请在下面输入邀请码查询房间信息后确认加入。若已经有人加入游戏，那么将可以进入房间观战。
+
 rules_descriptions: 规则描述

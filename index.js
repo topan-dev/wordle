@@ -82,6 +82,7 @@ app.get('/',(req,res)=>{
 app.use('/login',require('./src/api/login.js'));
 app.use('/i',require('./src/api/i.js'));
 app.use('/user/:uid',require('./src/api/user.js'));
+app.use('/pk',require('./src/api/pk.js'));
 
 app.listen(8599,()=>{
     console.log('    system | '.head+'Port :8599 is opened'.log);
