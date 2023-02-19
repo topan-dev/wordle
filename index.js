@@ -10,8 +10,6 @@ app.use(require('cookie-parser')());
 
 const ejs=require('ejs');
 const Template=require('./src/lib/template.js');
-const format=require('string-format');
-format.extend(String.prototype);
 
 const _=require('./locales/index.js');
 

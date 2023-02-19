@@ -2,9 +2,9 @@ _self: 中文
 
 home: 首页
 contests: 比赛
-pk_onheader: 单挑竞技场
+pk_onheader: 对决
 ranking: 排行
-application: 应用广场
+application: 应用
 login: 登录
 register: 注册
 settings: 设置
@@ -28,12 +28,25 @@ password_change_success: 修改成功！
 
 # PK
 pk_code: PK 邀请码
+pk_guest_warning: 未登录时仅可观战，建议您先登录账号。
 # Create Room
 create_pkroom: 创建房间
 create_tip: 若您想邀请他人，请选择一个比赛规则后配置房间信息即可生成邀请码。注意邀请码的有效期为 {time} 分钟，有效期内无人加入游戏则失效。而生成邀请码后 {coldtime} 分钟内不能生成新的邀请码。
 create_choose_rule: 请选择一个规则：
+pk_private_before: 不允许游戏开始前房间被搜索
+pk_private_after: 不允许游戏开始后房间被搜索
+pk_allowBots: 允许机器人进入房间
+pk_notAllowWatching: 不允许观战
+pk_quick: 快手赛
+pk_onlyAllowTwoPersonsSeeRecords: 仅允许双方查看提交记录
+pk_difficultMode: 开启困难模式
 # Join Room
 join_pkroom: 加入房间
 join_tip: 若您收到他人的邀请，请在下面输入邀请码查询房间信息后确认加入。若已经有人加入游戏，那么将可以进入房间观战。
+join_tip_guess: 您可以在下面输入一个已经就绪的房间的邀请码，确认后即可加入观战。若您希望加入游戏，请先登录。
+join_query: 查询房间
+# Search Room
+search_pkroom: 搜索房间
+search_pkroom_refresh: 刷新列表
 
 rules_descriptions: 规则描述
