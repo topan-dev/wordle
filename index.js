@@ -7,6 +7,7 @@ const bodyParser=require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(require('cookie-parser')());
+const URL=require('url');
 
 const ejs=require('ejs');
 const Template=require('./src/lib/template.js');
@@ -62,9 +63,6 @@ app.all('*',(req,res,next)=>{
 });
 
 app.use("/file",express.static(path.join(__dirname,'src/assets')));
-app.get('/robots.txt',(req,res)=>{
-    res.sendFile("src/assets/robots.txt",{root:__dirname},(err)=>{});
-});
 
 app.get('/',(req,res)=>{
     ejs.renderFile("./src/templates/home.html",{rules: DB.rules, _: req.body._},(err,HTML)=>{
@@ -82,6 +80,19 @@ app.use('/i',require('./src/api/i.js'));
 app.use('/user/:uid',require('./src/api/user.js'));
 app.use('/pk',require('./src/api/pk.js'));
 
+app.get('/setlang/:lang',(req,res)=>{
+    var to=req.params.lang;
+    if(!_.langs.includes(to))to=_.langs[0];
+    res.cookie("wordle-lang",to);
+    if(!req.headers.referer)return res.redirect("/");
+    var direct=URL.parse(req.headers.referer);
+    if(direct.host!=req.headers.host)res.redirect("/");
+    else res.redirect(direct.href);
+});
+app.get('/robots.txt',(req,res)=>{
+    res.sendFile("src/assets/robots.txt",{root:__dirname},(err)=>{});
+});
+
 app.listen(8599,()=>{
     console.log('    system | '.head+'Port :8599 is opened'.log);
 });
@@ -90,4 +101,5 @@ app.listen(8599,()=>{
 ELO Rating: https://blog.csdn.net/qq100440110/article/details/70240824
 Git: https://molmin.github.io/blog/article?id=16eb41280d1fb970c8705ae637a094c7
 Crypto: https://blog.csdn.net/loeyln/article/details/118254996
+正则：https://deerchao.cn/tutorials/regex/regex.htm
 */

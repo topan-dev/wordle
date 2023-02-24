@@ -26,5 +26,10 @@ repeat_password: Repeat Password
 two_passwords_are_diffrent: The two passwords are diffrent.
 password_validator_failed: Password validator failed.
 password_change_success: Change success!
+# Change Head Portrait
+confirm_change_to_default: Confirm to reset to the default avatar
+headimage_default: Default
+headimage_upload: Upload
+headimage_url: URL
 
 rules_descriptions: Rules descriptions

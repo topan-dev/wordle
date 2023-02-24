@@ -1,18 +1,5 @@
 $(document).ready(()=>{
-    $("#password-confirm").click(()=>{
-        $.post("/i/changepassword",{
-            old: $('#password-old').val(),
-            new: $('#password-new').val(),
-            repeat: $('#password-repeat').val()
-        },(data,status)=>{
-            if(data.error!=undefined)
-                $('#changepassword-error').text(data.error),
-                $('#changepassword-message').text("");
-            else $('#changepassword-error').text(""),
-                $('#changepassword-message').text(data.message);
-        });
-    });
-    $("#headimage-input").change(()=>{
+    $("#headimage-upload-input").change(()=>{
         var uploadfile=$("#headimage-input")[0].files[0];
         let reader=new FileReader();
         reader.readAsDataURL(uploadfile);
@@ -21,9 +8,9 @@ $(document).ready(()=>{
             $("#headimage-preview")[0].src=data;
         }
     });
-    $("#headimage-confirm").click(()=>{
-        if(!$("#headimage-input").val()){
-            alert("Please upload pictures first.");
+    $("#headimage-confirm-upload").click(()=>{
+        if(!$("#headimage-upload-input").val()){
+            $("#changeheadimage-error").text()
             return;
         }
         var uploadfile=$("#headimage-input")[0].files[0];
@@ -43,6 +30,19 @@ $(document).ready(()=>{
             success: function(data){
                 alert(data.message);
             }
+        });
+    });
+    $("#password-confirm").click(()=>{
+        $.post("/i/changepassword",{
+            old: $('#password-old').val(),
+            new: $('#password-new').val(),
+            repeat: $('#password-repeat').val()
+        },(data,status)=>{
+            if(data.error!=undefined)
+                $('#changepassword-error').text(data.error),
+                $('#changepassword-message').text("");
+            else $('#changepassword-error').text(""),
+                $('#changepassword-message').text(data.message);
         });
     });
 });

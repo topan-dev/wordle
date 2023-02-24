@@ -3,9 +3,26 @@
         <div style="padding-right: 12px;">
             <div class="topan-section-shadow">
                 <h4><%=_('change_headimage')%></h4>
-                <p><input type="file" id="headimage-input" accept="image/*"></input></p>
+                <div class='topan-tab'>
+                    <ul>
+                        <li class='topan-tab-showed'><%=_('headimage_default')%></li>
+                        <li><%=_('headimage_upload')%></li>
+                        <li><%=_('headimage_url')%></li>
+                    </ul>
+                    <div class='topan-tab-showed'>
+                        <p><button id="headimage-confirm-default" class="topan-button-emphasize topan-button-default"><%=_('confirm_change_to_default')%></button></p>
+                    </div>
+                    <div>
+                        <p><input type="file" id="headimage-upload-input" accept="image/*"></input></p>
+                        <p><button id="headimage-confirm-upload" class="topan-button-emphasize topan-button-default"><%=_('confirm')%></button></p>
+                    </div>
+                    <div>
+                        <p><button id="headimage-confirm-url" class="topan-button-emphasize topan-button-default"><%=_('confirm')%></button></p>
+                    </div>
+                </div>
+                <p style="color: red;" id="changeheadimage-error"></p>
+                <p style="color: green;" id="changeheadimage-message"></p>
                 <img id="headimage-preview" src="/user/<%=uid%>/headimage" style="border-radius: 50%; width: 100px; height: 100px;">
-                <p><button id="headimage-confirm" class="topan-button-emphasize topan-button-default"><%=_('confirm')%></button></p>
             </div>
         </div>
     </div>

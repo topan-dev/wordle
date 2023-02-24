@@ -7,12 +7,14 @@ var datas={},selector=``;
 langs.forEach((lang)=>{
     datas[lang]=yaml.load(fs.readFileSync(`./locales/${lang}.yaml`,'utf8'));
     if(selector.length>0)selector+=` | `;
-    selector+=`<a href="javascript:setCookie('wordle-lang','${lang}',0)">${datas[lang]['_self']}</a>`;
+    selector+=`<a href="/setlang/${lang}">${datas[lang]['_self']}</a>`;
 });
 
 function main(lang,key){
     if(datas[lang][key])return datas[lang][key];
-    if(datas[langs[0]][key])return datas[langs[0]][key];
+    for(var i=0;i<langs.length;i++)
+        if(datas[langs[i]][key])
+            return datas[langs[i]][key];
     return `[${key}]`;
 }
 
