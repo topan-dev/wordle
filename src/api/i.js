@@ -19,7 +19,7 @@ router.get('/',(req,res)=>{
 router.get('/settings',(req,res)=>{
     ejs.renderFile("./src/templates/i_settings.html",{_: req.body._, uid: req.uid},(err,HTML)=>{
         res.send(Template({title: `${req.body._('settings')}`,
-                           header: `<script src="/file/scripts/i_settings.js"></script>`,
+                           header: ``,
                            user: User.userdataByReq(req).name,
                            startTime: req.body.startTime,
                            onsettings: true,

@@ -24,7 +24,7 @@ router.get('/',(req,res)=>{
     }
     ejs.renderFile("./src/templates/login.html",{_: req.body._},(err,HTML)=>{
         res.send(Template({title: `${req.body._('login')}`,
-                           header: `<script src="/file/scripts/login.js"></script>`,
+                           header: ``,
                            user: User.userdataByReq(req).name,
                            startTime: req.body.startTime,
                            onlogin: true,

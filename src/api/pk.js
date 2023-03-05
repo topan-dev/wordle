@@ -25,7 +25,7 @@ router.get('/',(req,res)=>{
     if(req.logined){
         ejs.renderFile("./src/templates/pk_logined.html",{rules: DB.rules, _: req.body._},(err,HTML)=>{
             res.send(Template({title: `${req.body._('pk_onheader')}`,
-                               header: `<script src="/file/scripts/login.js"></script>`,
+                               header: ``,
                                user: User.userdataByReq(req).name,
                                startTime: req.body.startTime,
                                onpk: true,
@@ -36,7 +36,7 @@ router.get('/',(req,res)=>{
     else{
         ejs.renderFile("./src/templates/pk_guest.html",{_: req.body._},(err,HTML)=>{
             res.send(Template({title: `${req.body._('pk_onheader')}`,
-                               header: `<script src="/file/scripts/pk_home.js"></script>`,
+                               header: ``,
                                user: User.userdataByReq(req).name,
                                startTime: req.body.startTime,
                                onpk: true,
