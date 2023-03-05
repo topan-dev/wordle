@@ -3,6 +3,7 @@ const express=require('express'),
 const cors=require('cors');
 app.use(cors());
 const path=require('path');
+const fs=require('fs');
 const bodyParser=require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
@@ -25,6 +26,13 @@ colors.setTheme({
     bold: 'bold',
     head: 'grey'
 });
+
+if(!fs.existsSync("db")){
+    fs.mkdirSync("db");
+    fs.copyFileSync("src/database/main.json","db/main.json");
+    fs.mkdirSync("db/headimages");
+    fs.copyFileSync("src/database/headimages/default.png","db/headimages/default.png");
+}
 
 var DB=require('./data/main.json');
 
