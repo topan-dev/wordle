@@ -45,7 +45,26 @@
     width: 20px; height: 20px;
     vertical-align: middle;
 }
+.user-headimage-large{
+    border-radius: 50%;
+    width: 25px; height: 25px;
+    vertical-align: middle;
+}
+
+.result-green{
+    color: green;
+}
+.result-orange{
+    color: orange;
+}
+.result-grey{
+    color: grey;
+}
 
 .hide{
     display: none;
+}
+
+input#login-name,input#login-password{
+    width: 200px;
 }

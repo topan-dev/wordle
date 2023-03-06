@@ -1,0 +1,35 @@
+_self: English
+
+home: Home
+contests: Contests
+pk_onheader: 1v1 PK
+ranking: Ranking
+application: Application
+login: Login
+register: Register
+settings: Settings
+
+# Login
+login_username: Your Username
+login_password: Your Password
+cannot_find_user: This user cannot be found.
+password_error: Password error.
+
+# Settings
+change_headimage: Change Head Portrait
+change_password: Change Password
+confirm: Confirm
+# Change Password
+old_password: Old Password
+new_password: New Password
+repeat_password: Repeat Password
+two_passwords_are_diffrent: The two passwords are diffrent.
+password_validator_failed: Password validator failed.
+password_change_success: Change success!
+# Change Head Portrait
+confirm_change_to_default: Confirm to reset to the default avatar
+headimage_default: Default
+headimage_upload: Upload
+headimage_url: URL
+
+rules_descriptions: Rules descriptions

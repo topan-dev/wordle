@@ -1,0 +1,64 @@
+<div class="topan-tab">
+    <ul>
+        <li class="topan-tab-showed"><%=_('join_pkroom')%></li>
+        <li><%=_('search_pkroom')%></li>
+        <li><%=_('create_pkroom')%></li>
+    </ul>
+    <div class="topan-tab-showed">
+        <div class="topan-section-shadow">
+            <p><%=_('join_tip')%></p>
+            <p>
+                <input type="text" placeholder="<%=_('pk_code')%>" style="width: 200px;"></input>
+                <button id="join-query" class="topan-button-emphasize topan-button-default"><%=_('join_query')%></button>
+            </p>
+        </div>
+    </div>
+    <div>
+        <div class="topan-section-shadow">
+            <p><button id="search-pkroom" class="topan-button-emphasize topan-button-default"><%=_('search_pkroom_refresh')%></button></p>
+        </div>
+    </div>
+    <div>
+        <div class="topan-section-shadow">
+            <p><%=_('create_tip').format({time: 10, coldtime: 5})%></p>
+            <form name="ruleform">
+                <label><%=_('create_choose_rule')%></label>
+                <select name="ruleselect">
+                    <%rules.forEach((rule,index)=>{%>
+                        <option value="<%=index%>"><%=rule.name%></option>
+                    <%});%>
+                </select>
+            </form>
+            <!-- $('#create-1').is(':checked') -->
+            <div>
+                <input type="checkbox" id="create-1"/>
+                <label for="create-1"><%=_('pk_private_before')%> (test)</label>
+            </div>
+            <div>
+                <input type="checkbox" id="create-2"/>
+                <label for="create-2"><%=_('pk_private_after')%> (test)</label>
+            </div>
+            <div>
+                <input type="checkbox" id="create-3"/>
+                <label for="create-3"><%=_('pk_allowBots')%> (test)</label>
+            </div>
+            <div>
+                <input type="checkbox" id="create-4"/>
+                <label for="create-4"><%=_('pk_notAllowWatching')%> (test)</label>
+            </div>
+            <div>
+                <input type="checkbox" id="create-setting-1"/>
+                <label for="create-setting-1"><%=_('pk_quick')%> (test)</label>
+            </div>
+            <div>
+                <input type="checkbox" id="create-setting-2"/>
+                <label for="create-setting-2"><%=_('pk_onlyAllowTwoPersonsSeeRecords')%> (test)</label>
+            </div>
+            <div>
+                <input type="checkbox" id="create-setting-3"/>
+                <label for="create-setting-3"><%=_('pk_difficultMode')%> (test)</label>
+            </div>
+            <p><button id="create-pkroom" class="topan-button-emphasize topan-button-default"><%=_('create_pkroom')%></button></p>
+        </div>
+    </div>
+</div>

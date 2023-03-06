@@ -1,0 +1,29 @@
+_self: 日本語
+
+home: ホーム
+contests: コンテスト
+pk_onheader: 1v1 バトル
+ranking: 順位表
+application: アプリケション
+login: ロギン
+register: 新規登錄
+settings: 基本設定
+
+# Login
+login_username: ニックネーム
+login_password: パスワード
+cannot_find_user: This user cannot be found.
+password_error: パスワード不正解.
+
+# Settings
+change_headimage: アイコン設定
+change_password: パスワードの変更
+confirm: 提出
+# Change Password
+old_password: 現在のパスワード
+new_password: 新しいパスワード
+repeat_password: パスワードの確認
+two_passwords_are_diffrent: パスワードが一致していません。
+password_change_success: 更新しました。
+
+rules_descriptions: ルール紹介

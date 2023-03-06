@@ -1,0 +1,93 @@
+<script>
+    $(document).ready(()=>{
+    $("#headimage-upload-input").change(()=>{
+        var uploadfile=$("#headimage-input")[0].files[0];
+        let reader=new FileReader();
+        reader.readAsDataURL(uploadfile);
+        reader.onload=(temp)=>{
+            let data=temp.target.result;
+            $("#headimage-preview")[0].src=data;
+        }
+    });
+    $("#headimage-confirm-upload").click(()=>{
+        if(!$("#headimage-upload-input").val()){
+            $("#changeheadimage-error").text()
+            return;
+        }
+        var uploadfile=$("#headimage-input")[0].files[0];
+        if(uploadfile.size>=5*1024*1024){
+            alert("Picture size must be less than 5 MiB.");
+            return;
+        }
+        var formdata=new FormData();
+        formdata.append("headimage_upload",uploadfile);
+        $.ajax({
+            url: "/i/changeheadimage",
+            type: 'POST',
+            data: formdata,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function(data){
+                alert(data.message);
+            }
+        });
+    });
+    $("#password-confirm").click(()=>{
+        $.post("/i/changepassword",{
+            old: $('#password-old').val(),
+            new: $('#password-new').val(),
+            repeat: $('#password-repeat').val()
+        },(data,status)=>{
+            if(data.error!=undefined)
+                $('#changepassword-error').text(data.error),
+                $('#changepassword-message').text("");
+            else $('#changepassword-error').text(""),
+                $('#changepassword-message').text(data.message);
+        });
+    });
+});
+</script>
+
+<div class="row">
+    <div class="column-one-second">
+        <div style="padding-right: 12px;">
+            <div class="topan-section-shadow">
+                <h4><%=_('change_headimage')%></h4>
+                <div class='topan-tab'>
+                    <ul>
+                        <li class='topan-tab-showed'><%=_('headimage_default')%></li>
+                        <li><%=_('headimage_upload')%></li>
+                        <li><%=_('headimage_url')%></li>
+                    </ul>
+                    <div class='topan-tab-showed'>
+                        <p><button id="headimage-confirm-default" class="topan-button-emphasize topan-button-default"><%=_('confirm_change_to_default')%></button></p>
+                    </div>
+                    <div>
+                        <p><input type="file" id="headimage-upload-input" accept="image/*"></input></p>
+                        <p><button id="headimage-confirm-upload" class="topan-button-emphasize topan-button-default"><%=_('confirm')%></button></p>
+                    </div>
+                    <div>
+                        <p><button id="headimage-confirm-url" class="topan-button-emphasize topan-button-default"><%=_('confirm')%></button></p>
+                    </div>
+                </div>
+                <p style="color: red;" id="changeheadimage-error"></p>
+                <p style="color: green;" id="changeheadimage-message"></p>
+                <img id="headimage-preview" src="/user/<%=uid%>/headimage" style="border-radius: 50%; width: 100px; height: 100px;">
+            </div>
+        </div>
+    </div>
+    <div class="column-one-second">
+        <div style="padding-left: 12px;">
+            <div class="topan-section-shadow">
+                <h4><%=_('change_password')%></h4>
+                <p><input placeholder="<%=_('old_password')%>" type="password" id="password-old"></input></p>
+                <p><input placeholder="<%=_('new_password')%>" type="password" id="password-new"></input></p>
+                <p><input placeholder="<%=_('repeat_password')%>" type="password" id="password-repeat"></input></p>
+                <p style="color: red;" id="changepassword-error"></p>
+                <p style="color: green;" id="changepassword-message"></p>
+                <p><button id="password-confirm" class="topan-button-emphasize topan-button-default"><%=_('confirm')%></button></p>
+            </div>
+        </div>
+    </div>
+</div>
