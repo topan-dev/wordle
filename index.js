@@ -110,4 +110,5 @@ ELO Rating: https://blog.csdn.net/qq100440110/article/details/70240824
 Git: https://molmin.github.io/blog/article?id=16eb41280d1fb970c8705ae637a094c7
 Crypto: https://blog.csdn.net/loeyln/article/details/118254996
 正则：https://deerchao.cn/tutorials/regex/regex.htm
+bot: https://www.npmjs.com/package/wordle-solver
 */
