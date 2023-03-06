@@ -21,9 +21,14 @@
     <div>
         <div class="topan-section-shadow">
             <p><%=_('create_tip').format({time: 10, coldtime: 5})%></p>
-            <%rules.forEach((rule)=>{%>
-                <p><%=rule.name%></p>
-            <%});%>
+            <form name="ruleform">
+                <label><%=_('create_choose_rule')%></label>
+                <select name="ruleselect">
+                    <%rules.forEach((rule,index)=>{%>
+                        <option value="<%=index%>"><%=rule.name%></option>
+                    <%});%>
+                </select>
+            </form>
             <!-- $('#create-1').is(':checked') -->
             <div>
                 <input type="checkbox" id="create-1"/>
@@ -53,7 +58,7 @@
                 <input type="checkbox" id="create-setting-3"/>
                 <label for="create-setting-3"><%=_('pk_difficultMode')%> (test)</label>
             </div>
-            <p></p>
+            <p><button id="create-pkroom" class="topan-button-emphasize topan-button-default"><%=_('create_pkroom')%></button></p>
         </div>
     </div>
 </div>
